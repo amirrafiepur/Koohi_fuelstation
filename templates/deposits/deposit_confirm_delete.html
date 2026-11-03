@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% load display_tags %}
+{% load jalali_tags %}
+{% block title %}حذف واریز{% endblock %}
+{% block content %}
+<div class="panel" style="max-width: 480px; margin: 0 auto;">
+  <h2 class="panel__title">حذف واریز</h2>
+
+  <div class="alert alert--info">
+    آیا از حذف واریز {{ deposit.date|jalali }} به مبلغ {{ deposit.deposit_amount|num }} اطمینان دارید؟
+    این عملیات قابل بازگشت نیست.
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="background: var(--color-danger);">بله، حذف شود</button>
+  </form>
+
+  <p style="margin-top: 1rem; font-size: 0.8rem;">
+    <a href="{% url 'deposits:deposit_list' %}">انصراف و بازگشت</a>
+  </p>
+</div>
+{% endblock %}

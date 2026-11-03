@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load jalali_tags %}
+{% load static %}
+{% load display_tags %}
+{% block title %}گزارش کارکرد نازل‌ها — دفتر روزانه{% endblock %}
+{% block extra_head %}
+<script src="{% static 'js/jalali.js' %}"></script>
+{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h2 class="panel__title">  گزارش کارکرد هر نازل - دفتر روزانه  </h2>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+    <div>
+      <label class="form-label">انتخاب نازل</label>
+      <select id="nozzle-select" class="form-input" onchange="window.location = '?nozzle_id=' + this.value + '&start_date={{ start_date|date:"Y-m-d" }}&end_date={{ end_date|date:"Y-m-d" }}'">
+        <option value="">— انتخاب کنید —</option>
+        {% for nozzle in nozzles %}
+          <option value="{{ nozzle.id }}" {% if selected_nozzle.id == nozzle.id %}selected{% endif %}>
+            نازل {{ nozzle.number }} ({{ nozzle.tank.product.name|persian_product }})
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label">از تاریخ</label>
+      <input type="text" inputmode="numeric" class="form-input jalali-date-input" placeholder="۱۴۰۵/۰۱/۰۱"
+             value="{{ start_date|jalali }}"
+             data-nav-template="?nozzle_id={{ selected_nozzle.id|default:'' }}&start_date=__ISO__&end_date={{ end_date|date:'Y-m-d' }}">
+    </div>
+    <div>
+      <label class="form-label">تا تاریخ</label>
+      <input type="text" inputmode="numeric" class="form-input jalali-date-input" placeholder="۱۴۰۵/۰۱/۰۱"
+             value="{{ end_date|jalali }}"
+             data-nav-template="?nozzle_id={{ selected_nozzle.id|default:'' }}&start_date={{ start_date|date:'Y-m-d' }}&end_date=__ISO__">
+    </div>
+  </div>
+
+  {% if selected_nozzle %}
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+      <h3 style="font-size: 0.95rem; margin:0;">نازل {{ selected_nozzle.number }} ({{ selected_nozzle.tank.product.name|persian_product }})</h3>
+      {% if rows %}
+      <a href="{% url 'printing:nozzle_ledger_print' selected_nozzle.id %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+         target="_blank" class="btn" style="display:inline-block; width:auto; padding:0.4rem 0.9rem; font-size:0.85rem;">
+        چاپ / PDF
+      </a>
+      {% endif %}
+    </div>
+
+    {% if rows %}
+    <p id="table-mode-hint" hidden style="margin: 0 0 0.5rem 0; font-size: 0.8rem; color: var(--color-ink-muted);">
+      حالت پیمایش جدول فعال است — با ↑ و ↓ بین ردیف‌ها حرکت کنید؛ برای بازگشت به انتخاب نازل، Enter را بزنید.
+    </p>
+    <table id="nozzle-ledger-table" class="row-nav-table" style="width:100%; border-collapse: collapse; font-size: 0.85rem;">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--color-border); text-align: right;">
+          <th style="padding: 0.4rem;">تاریخ</th>
+          <th style="padding: 0.4rem;">کنتور قبلی</th>
+          <th style="padding: 0.4rem;">آزمایش</th>
+          <th style="padding: 0.4rem;">فروش مکانیکی</th>
+          <th style="padding: 0.4rem;">جمع روزانه</th>
+          <th style="padding: 0.4rem;">جمع کل</th>
+          <th style="padding: 0.4rem;">کنتور جدید</th>
+          <th style="padding: 0.4rem;">نرخ</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+        <tr style="border-bottom: 1px solid var(--color-border);">
+          <td style="padding: 0.4rem;" class="numeric">{{ row.date|jalali }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ row.previous_meter|num }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ row.test|num }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ row.mechanical_sales|num }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ row.daily_total|num }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ row.cumulative_total|num }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ row.new_meter|num }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ row.sales_rate|num }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p style="color: var(--color-ink-muted);">در بازه انتخاب‌شده اطلاعاتی یافت نشد.</p>
+    {% endif %}
+  {% endif %}
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function () { JalaliCalendar.bindNavInputs(); });
+
+// Keyboard navigation (no mouse needed), two modes toggled by Enter -- the
+// table mode (Enter, blue row highlight, ArrowUp/Down between rows,
+// auto-scroll, Enter again to leave) is the shared
+// partials/_table_row_navigation.html; this page adds only the default
+// nozzle mode:
+//
+//   Nozzle mode (default): ArrowUp -> next nozzle, ArrowDown -> previous
+//     nozzle, clamped to the first/last nozzle in the list (1..26) --
+//     never wraps or goes out of range. Keeps the current date range (the
+//     select's own onchange already carries start_date/end_date through).
+TableRowNavigation.init({
+  rowsSelector: '#nozzle-ledger-table tbody tr',
+  hintId: 'table-mode-hint',
+  onArrowOutsideTableMode: function (e) {
+    var select = document.getElementById('nozzle-select');
+    if (!select) return;
+    var options = Array.prototype.slice.call(select.options).filter(function (o) { return o.value; });
+    if (options.length === 0) return;
+
+    var currentIndex = options.findIndex(function (o) { return o.selected; });
+    var nextIndex;
+    if (e.key === 'ArrowUp') {
+      nextIndex = currentIndex < 0 ? 0 : Math.min(currentIndex + 1, options.length - 1);
+    } else {
+      nextIndex = currentIndex < 0 ? 0 : Math.max(currentIndex - 1, 0);
+    }
+    if (nextIndex === currentIndex) return;
+
+    e.preventDefault();
+    select.value = options[nextIndex].value;
+    select.dispatchEvent(new Event('change'));
+  }
+});
+</script>
+{% endblock %}

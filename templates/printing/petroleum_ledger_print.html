@@ -1,0 +1,91 @@
+{% extends "printing/base_print.html" %}
+{% load jalali_tags %}
+{% load display_tags %}
+{% block body_class %}landscape dense{% endblock %}
+{% block title %}دفتر موجودی و عملیات — {{ tank.product.name|persian_product }}{% endblock %}
+{% block report_title %}دفتر موجودی و عملیات — روزانه{% endblock %}
+{% block report_period %}
+  {{ tank.product.name|persian_product }} —
+  از {{ start_date|jalali }} تا {{ end_date|jalali }}
+{% endblock %}
+
+{% block report_body %}
+{% if rows %}
+<table class="print-table print-summary">
+  <thead>
+    <tr><th colspan="6" style="text-align:center;">مجموع اطلاعات</th></tr>
+    <tr>
+      <th>مجموع خرید</th>
+      <th>مجموع سرک</th>
+      <th>مجموع آزمایش</th>
+      <th>مجموع فروش</th>
+      <th>مجموع کسری</th>
+      <th>مجموع آزمایش</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="numeric">{{ totals.total_purchase|num }}</td>
+      <td class="numeric">{{ totals.total_overage|num }}</td>
+      <td class="numeric">{{ totals.total_test_received|num }}</td>
+      <td class="numeric">{{ totals.total_sales|num }}</td>
+      <td class="numeric">{{ totals.total_shortage|num }}</td>
+      <td class="numeric">{{ totals.total_test_dispatched|num }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="print-table">
+  <thead>
+    <tr>
+      <th colspan="8" style="text-align:center;">رسیده</th>
+      <th colspan="6" style="text-align:center; border-right: 2px solid #000;">خارج شده</th>
+    </tr>
+    <tr>
+      <th>تاریخ</th>
+      <th>شماره ی بارنامه</th>
+      <th>شماره ی نفتکش</th>
+      <th>مقدار خرید</th>
+      <th>مجموع آزمایش</th>
+      <th>سرک</th>
+      <th>جمع روزانه‌ی رسیده</th>
+      <th>جمع کل رسیده</th>
+      <th style="border-right: 2px solid #000;">جمع فروش مکانیکی</th>
+      <th>جمع آزمایش</th>
+      <th>کسری</th>
+      <th>جمع روزانه‌ی خارج شده</th>
+      <th>جمع کل خارج شده</th>
+      <th>موجودی واقعی</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+      {% for received in row.received_rows %}
+      <tr>
+        {% if forloop.first %}
+        <td class="numeric" rowspan="{{ row.received_rows|length }}">{{ row.date|jalali }}</td>
+        {% endif %}
+        <td>{{ received.program_number|default:"—" }}</td>
+        <td>{{ received.tanker_number|default:"—" }}</td>
+        <td class="numeric">{{ received.quantity|default:"—"|num }}</td>
+        <td class="numeric">{{ received.test_return|default_if_none:""|num }}</td>
+        <td class="numeric">{{ received.overage|default_if_none:""|num }}</td>
+        <td class="numeric">{{ received.daily_received|default_if_none:""|num }}</td>
+        <td class="numeric">{{ received.cumulative_received|default_if_none:""|num }}</td>
+        {% if forloop.first %}
+        <td class="numeric" style="border-right: 2px solid #000;" rowspan="{{ row.received_rows|length }}">{{ row.daily_sales|num }}</td>
+        <td class="numeric" rowspan="{{ row.received_rows|length }}">{{ row.test_return|num }}</td>
+        <td class="numeric" rowspan="{{ row.received_rows|length }}">{{ row.shortage|default:"—"|num }}</td>
+        <td class="numeric" rowspan="{{ row.received_rows|length }}">{{ row.daily_dispatched|default:"—"|num }}</td>
+        <td class="numeric" rowspan="{{ row.received_rows|length }}">{{ row.cumulative_dispatched|default:"—"|num }}</td>
+        <td class="numeric" rowspan="{{ row.received_rows|length }}">{{ row.actual_inventory|default:"—"|num }}</td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p class="print-empty-note">در بازه انتخاب‌شده اطلاعاتی یافت نشد.</p>
+{% endif %}
+{% endblock %}

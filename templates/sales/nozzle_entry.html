@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% load jalali_tags %}
+{% load display_tags %}
+{% block title %}ثبت نازل {{ nozzle.number }} — {{ working_day.date|jalali }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width: 480px; margin: 0 auto;">
+  <h2 class="panel__title">
+    نازل {{ nozzle.number }} — {{ nozzle.tank.product.name|persian_product }}
+    <span style="color: var(--color-ink-muted); font-size: 0.8rem; float: left;">
+      {{ working_day.date|jalali }}
+    </span>
+  </h2>
+
+  {% if show_negative_warning %}
+    <div class="alert alert--warn">
+      هشدار: مقدار کنتور جدید کمتر از کنتور قبلی است. در صورت تایید، محاسبه طبق فرمول عادی انجام می‌شود.
+    </div>
+  {% endif %}
+
+  <form method="post" id="nozzle-form" data-enter-next>
+    {% csrf_token %}
+    {% if show_negative_warning %}<input type="hidden" name="confirm_negative_meter" value="1">{% endif %}
+
+    <div class="form-group">
+      <label class="form-label" for="{{ form.previous_meter.id_for_label }}">{{ form.previous_meter.label }}</label>
+      {{ form.previous_meter }}
+      {% for error in form.previous_meter.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.new_meter.id_for_label }}">{{ form.new_meter.label }}</label>
+      {{ form.new_meter }}
+      {% for error in form.new_meter.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.test.id_for_label }}">{{ form.test.label }}</label>
+      {{ form.test }}
+      {% for error in form.test.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.sales_rate.id_for_label }}">{{ form.sales_rate.label }}</label>
+      {{ form.sales_rate }}
+      {% for error in form.sales_rate.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+
+    <button type="submit" class="btn">
+      {% if show_negative_warning %}تایید و ذخیره{% else %}ذخیره (F2){% endif %}
+    </button>
+  </form>
+
+  <p style="margin-top: 1rem; font-size: 0.8rem; color: var(--color-ink-muted);">
+    <a href="{% url 'sales:invoice_detail' working_day.date|date:'Y-m-d' %}">بازگشت به فاکتور روزانه</a>
+  </p>
+</div>
+
+<script>
+  // F2 = save/confirm (architecture doc §"Keyboard Shortcuts"). Shortcuts
+  // always supplement the GUI submit button, never replace it.
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'F2') {
+      e.preventDefault();
+      document.getElementById('nozzle-form').requestSubmit();
+    }
+  });
+</script>
+{% endblock %}

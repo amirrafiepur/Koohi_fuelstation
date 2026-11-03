@@ -1,0 +1,45 @@
+{% extends "printing/base_print.html" %}
+{% load display_tags %}
+{% block body_class %}landscape{% endblock %}
+{% block title %}گزارش ماهانه مخازن{% endblock %}
+{% block report_title %}گزارش ماهانه مخازن{% endblock %}
+{% block report_period %}سال {{ year }} — ماه {{ month }}{% endblock %}
+
+{% block report_body %}
+{% if rows %}
+<table class="print-table">
+  <thead>
+    <tr>
+      <th>محصول</th>
+      <th>موجودی ابتدای دوره</th>
+      <th>مجموع سرک</th>
+      <th>کل بازگشت تست</th>
+      <th>جمع کل رسیده</th>
+      <th>کل فروش</th>
+      <th>کل بازگشت تست</th>
+      <th>کل کسری</th>
+      <th>جمع کل خارج شده</th>
+      <th>موجودی آخر دوره</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.tank.product.name|persian_product }}</td>
+      <td class="numeric">{{ row.beginning_inventory|num }}</td>
+      <td class="numeric">{{ row.total_overage|num }}</td>
+      <td class="numeric">{{ row.total_test_return|num }}</td>
+      <td class="numeric">{{ row.total_received|default:"—"|num }}</td>
+      <td class="numeric">{{ row.total_sales|num }}</td>
+      <td class="numeric">{{ row.total_test_return|num }}</td>
+      <td class="numeric">{{ row.total_shortage|num }}</td>
+      <td class="numeric">{{ row.total_dispatched|default:"—"|num }}</td>
+      <td class="numeric">{{ row.ending_inventory|default:"—"|num }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p class="print-empty-note">در این ماه اطلاعاتی یافت نشد.</p>
+{% endif %}
+{% endblock %}

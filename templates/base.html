@@ -1,0 +1,178 @@
+{% load static %}
+{% load jalali_tags %}
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}140 جهانی‌پور{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'css/base.css' %}">
+  {% block extra_head %}{% endblock %}
+</head>
+<body>
+  {% if user.is_authenticated %}
+  <header class="app-header">
+    <div class="app-header__station">
+      <span class="app-header__station-name">۱۴۰ جهانی‌پور</span>
+      <span class="app-header__station-location">خراسان رضوی، مشهد</span>
+    </div>
+    <div class="app-header__right">
+      <div class="today-date">
+        <svg class="global-date__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="3" y="4" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M3 8H17" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M6.5 2.5V5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M13.5 2.5V5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <span>تاریخ امروز: <span class="numeric">{{ today|jalali }}</span></span>
+      </div>
+
+      <div class="global-date" id="global-date-widget">
+        <button type="button" class="global-date__display" id="global-date-toggle">
+          <svg class="global-date__icon" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="4" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M3 8H17" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M6.5 2.5V5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <path d="M13.5 2.5V5.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          <span class="numeric" id="global-date-label">{{ global_date|jalali }}</span>
+        </button>
+
+        <div class="global-date__panel" id="global-date-panel" hidden>
+          <div class="global-date__panel-header">
+            <button type="button" class="global-date__nav" id="global-date-prev" aria-label="ماه قبل">&#8250;</button>
+            <span class="global-date__panel-title" id="global-date-title"></span>
+            <button type="button" class="global-date__nav" id="global-date-next" aria-label="ماه بعد">&#8249;</button>
+          </div>
+          <div class="global-date__weekdays">
+            <span>ش</span><span>ی</span><span>د</span><span>س</span><span>چ</span><span>پ</span><span>ج</span>
+          </div>
+          <div class="global-date__days" id="global-date-days"></div>
+        </div>
+
+        <form method="post" action="{% url 'core:set_global_date' %}" id="global-date-form" hidden>
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{{ request.get_full_path }}">
+          <input type="hidden" name="section" value="{{ request.resolver_match.app_name }}">
+          <input type="hidden" name="date" id="global-date-value" value="{{ global_date|date:'Y-m-d' }}">
+        </form>
+      </div>
+
+      <script src="{% static 'js/jalali.js' %}"></script>
+      <script>
+        (function () {
+          var widget = document.getElementById('global-date-widget');
+          var toggle = document.getElementById('global-date-toggle');
+          var panel = document.getElementById('global-date-panel');
+          var label = document.getElementById('global-date-label');
+          var form = document.getElementById('global-date-form');
+          var valueInput = document.getElementById('global-date-value');
+
+          // The calendar is built and browsed in Jalali; the value actually
+          // submitted to the server (valueInput) is always the Gregorian
+          // ISO date, so all business logic downstream keeps working with
+          // plain Gregorian dates exactly as before.
+          var calendar = JalaliCalendar.mount({
+            toggle: toggle,
+            panel: panel,
+            title: document.getElementById('global-date-title'),
+            daysEl: document.getElementById('global-date-days'),
+            prevBtn: document.getElementById('global-date-prev'),
+            nextBtn: document.getElementById('global-date-next'),
+            initialIso: valueInput.value,
+            onSelect: function (iso, jalaliStr) {
+              label.textContent = jalaliStr;
+              valueInput.value = iso;
+              form.hidden = false;
+              form.submit();
+            }
+          });
+
+          toggle.addEventListener('click', function (e) {
+            e.stopPropagation();
+            var isOpen = !panel.hidden;
+            panel.hidden = isOpen;
+            if (!isOpen) { calendar.resetToSelected(); }
+          });
+
+          panel.addEventListener('click', function (e) { e.stopPropagation(); });
+
+          document.addEventListener('click', function () {
+            panel.hidden = true;
+          });
+        })();
+      </script>
+
+      {% if license_valid %}
+        <span class="license-badge {% if license_warning %}license-badge--warn{% else %}license-badge--ok{% endif %}">
+          <svg class="license-badge__gauge" viewBox="0 0 20 20">
+            <circle cx="10" cy="10" r="8" fill="none" stroke="rgba(255,255,255,0.25)" stroke-width="3"/>
+            <circle class="fill" cx="10" cy="10" r="8" fill="none" stroke-width="3"
+                    stroke-dasharray="50.24" stroke-dashoffset="0" transform="rotate(-90 10 10)"/>
+          </svg>
+          {% if license_warning %}
+            {{ license_days_remaining }} روز تا پایان اعتبار لایسنس
+          {% else %}
+            لایسنس تا {{ license_days_remaining }} روز دیگر معتبر است
+          {% endif %}
+        </span>
+      {% endif %}
+      <form method="post" action="{% url 'accounts:logout' %}" style="margin:0;">
+        {% csrf_token %}
+        <button type="submit" class="app-nav__link" style="background:rgba(255,255,255,0.15); border:none; color:#fff; cursor:pointer;">خروج</button>
+      </form>
+    </div>
+  </header>
+  <nav class="app-nav">
+    <a class="app-nav__link app-nav__link--active" href="{% url 'core:dashboard' %}">داشبورد</a>
+    <a class="app-nav__link" href="{% url 'sales:choose_date' %}">فاکتورهای فروش</a>
+    <a class="app-nav__link" href="{% url 'purchases:invoice_list' %}">فاکتورهای خرید</a>
+    <a class="app-nav__link" href="{% url 'inventory:choose_date' %}">موجودی مخازن</a>
+    <a class="app-nav__link" href="{% url 'reports:nozzle_ledger' %}">گزارش کارکرد هر نازل</a>
+    <a class="app-nav__link" href="{% url 'reports:all_nozzles_summary' %}">لیست اطلاعات فروش</a>
+    <a class="app-nav__link" href="{% url 'reports:petroleum_ledger' %}">دفتر موجودی و عملیات</a>
+    <a class="app-nav__link" href="{% url 'reports:petroleum_monthly' %}">گزارش ماهانه مخازن</a>
+    <a class="app-nav__link" href="{% url 'seals:seal_list' %}">پلمپ‌ها</a>
+    <a class="app-nav__link" href="{% url 'deposits:deposit_list' %}">واریزها</a>
+    <a class="app-nav__link" href="{% url 'statement:statement' %}">صورت وضعیت ماهانه</a>
+    <a class="app-nav__link" href="{% url 'comparison:comparison' %}">مقایسه سیستم مکانیکی و دیجیتال</a>
+  </nav>
+
+  <script>
+    // Escape -> return to the previous view/state, site-wide. Every
+    // filter, selection, and section in this app is already encoded in
+    // the URL itself (nozzle_id, month, start_date/end_date, the page
+    // path...), and every change to one of those navigates to a new URL
+    // (see e.g. نازل select's onchange, گزارش ماهانه مخازن's month
+    // select) -- so the browser's OWN history already holds exactly the
+    // sequence of previous states the task describes. Reusing it here
+    // (rather than inventing a separate server-side "previous state"
+    // mechanism) is exactly "the existing navigation architecture."
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+
+      var tag = (e.target.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select' || e.target.isContentEditable) {
+        return;  // don't interfere with typing or an open control
+      }
+
+      if (window.history.length > 1) {
+        e.preventDefault();
+        window.history.back();
+      }
+    });
+  </script>
+  {% endif %}
+  {% include "partials/_enter_next_field.html" %}
+  {% include "partials/_table_row_navigation.html" %}
+
+  <main class="{% if user.is_authenticated %}app-main{% endif %}">
+    {% if messages %}
+      {% for message in messages %}
+        <div class="alert alert--{{ message.tags|default:'info' }}">{{ message }}</div>
+      {% endfor %}
+    {% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

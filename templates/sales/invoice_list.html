@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load jalali_tags %}
+{% load display_tags %}
+{% block title %}فهرست فاکتورهای فروش{% endblock %}
+{% block content %}
+<div class="panel">
+  <h2 class="panel__title">فهرست فاکتورهای فروش</h2>
+
+  {% if rows %}
+  <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">
+    <thead>
+      <tr style="border-bottom: 2px solid var(--color-border); text-align: right;">
+        <th style="padding: 0.5rem;">ردیف</th>
+        <th style="padding: 0.5rem;">تاریخ</th>
+        <th style="padding: 0.5rem;">زمان</th>
+        <th style="padding: 0.5rem;">اپراتور</th>
+        <th style="padding: 0.5rem;">تعداد نازل</th>
+        <th style="padding: 0.5rem;">مجموع عملکرد</th>
+        <th style="padding: 0.5rem;">مجموع تست</th>
+        <th style="padding: 0.5rem;">مجموع فروش</th>
+        <th style="padding: 0.5rem;">مبلغ کل</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr style="border-bottom: 1px solid var(--color-border); cursor:pointer;"
+          onclick="window.location='{% url "sales:invoice_detail" row.working_day.date|date:"Y-m-d" %}'">
+        <td style="padding: 0.5rem;" class="numeric">{{ forloop.counter }}</td>
+        <td style="padding: 0.5rem;" class="numeric">{{ row.working_day.date|jalali }}</td>
+        <td style="padding: 0.5rem;" class="numeric">{{ row.invoice.entry_time|date:"H:i" }}</td>
+        <td style="padding: 0.5rem;">{{ row.invoice.operator }}</td>
+        <td style="padding: 0.5rem;" class="numeric">{{ row.nozzle_count|num }}</td>
+        <td style="padding: 0.5rem;" class="numeric">{{ row.total_operation|num }}</td>
+        <td style="padding: 0.5rem;" class="numeric">{{ row.total_test|num }}</td>
+        <td style="padding: 0.5rem;" class="numeric">{{ row.total_sales|num }}</td>
+        <td style="padding: 0.5rem;" class="numeric">{{ row.total_amount|num }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p style="color: var(--color-ink-muted);">هنوز فاکتوری ثبت نشده است.</p>
+  {% endif %}
+
+  <p style="margin-top: 1rem;">
+    <a href="{% url 'sales:choose_date' %}" class="btn" style="display:inline-block; width:auto;">ثبت فاکتور جدید</a>
+  </p>
+</div>
+{% endblock %}

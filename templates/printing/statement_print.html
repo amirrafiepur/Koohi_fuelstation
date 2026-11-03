@@ -1,0 +1,78 @@
+{% extends "printing/base_print.html" %}
+{% load display_tags %}
+{% block body_class %}landscape{% endblock %}
+{% block title %}صورت وضعیت ماهانه{% endblock %}
+{% block report_title %}صورت وضعیت ماهانه{% endblock %}
+{% block report_period %}سال {{ year }} — ماه {{ month }}{% endblock %}
+
+{% block report_body %}
+{% if rows %}
+<table class="print-table">
+  <thead>
+    <tr>
+      <th colspan="6" style="text-align:center;">رسیده</th>
+      <th colspan="5" style="text-align:center; border-right: 2px solid #000;">خارج شده</th>
+    </tr>
+    <tr>
+      <th>نوع فرآورده</th>
+      <th>موجودی اول ماه</th>
+      <th>مقدار رسیده</th>
+      <th>آزمایش</th>
+      <th>سرک</th>
+      <th>جمع کل</th>
+      <th style="border-right: 2px solid #000;">مقدار فروش</th>
+      <th>آزمایش</th>
+      <th>کسری</th>
+      <th>موجودی آخر ماه</th>
+      <th>جمع کل خارج شده</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.product.name|persian_product }}</td>
+      <td class="numeric">{{ row.beginning_inventory|num }}</td>
+      <td class="numeric">{{ row.total_purchase|num }}</td>
+      <td class="numeric">{{ row.total_test_return|num }}</td>
+      <td class="numeric">{{ row.total_overage|num }}</td>
+      <td class="numeric">{{ row.received_total|num }}</td>
+      <td class="numeric" style="border-right: 2px solid #000;">{{ row.total_sales|num }}</td>
+      <td class="numeric">{{ row.total_test_return|num }}</td>
+      <td class="numeric">{{ row.total_shortage|num }}</td>
+      <td class="numeric">{{ row.ending_inventory|default:"—"|num }}</td>
+      <td class="numeric">{{ row.dispatched_total|num }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<table class="print-table" style="margin-top: 18px;">
+  <thead>
+    <tr>
+      <th>نوع فرآورده</th>
+      <th>اختلاف فروش دیجیتال و مکانیکی</th>
+      <th>پورسانت</th>
+      <th>مقدار لیتراژ کسری غیرمجازه</th>
+      <th>جمع کل رسیده</th>
+      <th>تعداد نفتکش</th>
+      <th>ظرفیت نفتکش</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td>{{ row.product.name|persian_product }}</td>
+      <td class="numeric">{{ row.digital_sales_difference|default:"—"|num }}</td>
+      <td class="numeric">{{ row.commission|num }}</td>
+      <td class="numeric">{{ row.unauthorized_shortage_shown|num }}</td>
+      <td class="numeric">{{ row.total_received|default:"—"|num }}</td>
+      <td class="numeric">{{ row.tanker_count|num }}</td>
+      <td class="numeric">{{ row.tanker_capacity|num }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p class="print-empty-note">در این ماه اطلاعاتی یافت نشد.</p>
+{% endif %}
+{% endblock %}

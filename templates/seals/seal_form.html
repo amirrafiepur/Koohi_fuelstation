@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}{% if editing %}ویرایش پلمپ{% else %}ثبت پلمپ جدید{% endif %}{% endblock %}
+{% block extra_head %}{{ form.media }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width: 480px; margin: 0 auto;">
+  <h2 class="panel__title">{% if editing %}ویرایش پلمپ{% else %}ثبت پلمپ جدید{% endif %}</h2>
+
+  <form method="post" data-enter-next>
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label" for="{{ form.nozzle.id_for_label }}">{{ form.nozzle.label }}</label>
+      {{ form.nozzle }}
+      {% for error in form.nozzle.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.section.id_for_label }}">{{ form.section.label }}</label>
+      {{ form.section }}
+      {% for error in form.section.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.date.id_for_label }}">{{ form.date.label }}</label>
+      {{ form.date }}
+      {% for error in form.date.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.seal_number.id_for_label }}">{{ form.seal_number.label }}</label>
+      {{ form.seal_number }}
+      {% for error in form.seal_number.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+
+    <button type="submit" class="btn">{% if editing %}ذخیره تغییرات{% else %}ثبت پلمپ{% endif %}</button>
+  </form>
+
+  <p style="margin-top: 1rem; font-size: 0.8rem;">
+    <a href="{% url 'seals:seal_list' %}">بازگشت به فهرست پلمپ‌ها</a>
+  </p>
+</div>
+{% endblock %}

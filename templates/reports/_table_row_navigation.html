@@ -1,0 +1,111 @@
+{% comment %}
+Shared keyboard navigation for report tables (no mouse needed).
+   Included by گزارش کارکرد هر نازل and لیست اطلاعات فروش.
+
+   Enter toggles table-navigation mode: the first row of
+   `rowsSelector` is highlighted in blue; ArrowDown/ArrowUp move the
+   highlight (clamped to the first/last row) and the page scrolls to keep
+   the selected row in view; Enter again leaves the mode and removes the
+   highlight. Outside table mode, ArrowUp/ArrowDown are handed to the
+   optional `onArrowOutsideTableMode(event)` callback (the nozzle ledger
+   uses it for nozzle selection); with no callback they keep their normal
+   browser behaviour.
+
+   Enter does nothing except toggle the mode, and only when there is a
+   table row to navigate. Every key is ignored while the user is typing in
+   or operating a control (input, select, textarea, button, link, editable
+   element) and when Ctrl/Alt/Meta is held, so normal keyboard behaviour
+   elsewhere on the page is never affected.
+
+   Usage (after the table, which needs class="row-nav-table"):
+     TableRowNavigation.init({
+       rowsSelector: '#my-table tbody tr',
+       hintId: 'table-mode-hint',                     // optional element shown in table mode
+       onArrowOutsideTableMode: function (e) { ... }  // optional
+     });
+{% endcomment %}
+<style>
+  /* Selected row in table-navigation mode; scroll-margin keeps a little
+     context visible around it when the page scrolls to follow it. */
+  .row-nav-table tbody tr { scroll-margin-block: 2.5rem; }
+  .row-nav-table tbody tr.row-selected td { background: #1d4ed8; color: #fff; }
+</style>
+<script>
+window.TableRowNavigation = (function () {
+  function isInteractive(el) {
+    if (!el) return false;
+    var tag = (el.tagName || '').toLowerCase();
+    return tag === 'input' || tag === 'textarea' || tag === 'select' ||
+           tag === 'button' || tag === 'a' || tag === 'summary' ||
+           !!el.isContentEditable;
+  }
+
+  function init(opts) {
+    var tableMode = false;
+    var selectedIndex = -1;
+
+    function tableRows() {
+      return Array.prototype.slice.call(document.querySelectorAll(opts.rowsSelector));
+    }
+
+    function highlight(list, index) {
+      list.forEach(function (row, i) {
+        if (i === index) {
+          row.classList.add('row-selected');
+          row.setAttribute('aria-selected', 'true');
+        } else {
+          row.classList.remove('row-selected');
+          row.removeAttribute('aria-selected');
+        }
+      });
+      selectedIndex = index;
+      if (index >= 0 && list[index]) {
+        // 'nearest' scrolls only as far as needed to bring the row into view.
+        list[index].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
+    }
+
+    function setHint(visible) {
+      var hint = opts.hintId ? document.getElementById(opts.hintId) : null;
+      if (hint) hint.hidden = !visible;
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Enter' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
+      if (isInteractive(e.target)) return;
+
+      if (e.key === 'Enter') {
+        var list = tableRows();
+        if (list.length === 0) return;      // nothing to navigate: leave Enter alone
+        e.preventDefault();
+        if (e.repeat) return;               // holding Enter must not flicker the mode
+        if (tableMode) {
+          tableMode = false;
+          setHint(false);
+          highlight(list, -1);
+        } else {
+          tableMode = true;
+          setHint(true);
+          highlight(list, 0);
+        }
+        return;
+      }
+
+      if (tableMode) {
+        var rowsNow = tableRows();
+        if (rowsNow.length === 0) return;
+        e.preventDefault();                 // arrows move the selection, not the page
+        var step = e.key === 'ArrowDown' ? 1 : -1;
+        var target = Math.min(Math.max(selectedIndex + step, 0), rowsNow.length - 1);
+        if (target !== selectedIndex) highlight(rowsNow, target);
+        return;
+      }
+
+      if (opts.onArrowOutsideTableMode) opts.onArrowOutsideTableMode(e);
+    });
+  }
+
+  return { init: init };
+})();
+</script>

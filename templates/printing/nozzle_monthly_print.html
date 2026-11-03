@@ -1,0 +1,39 @@
+{% extends "printing/base_print.html" %}
+{% load display_tags %}
+{% block body_class %}landscape{% endblock %}
+{% block title %}گزارش ماهانه کارکرد نازل‌ها{% endblock %}
+{% block report_title %}گزارش کارکرد نازل‌ها — ماهانه{% endblock %}
+{% block report_period %}سال {{ year }} — ماه {{ month }}{% endblock %}
+
+{% block report_body %}
+{% if rows %}
+<table class="print-table">
+  <thead>
+    <tr>
+      <th>نازل</th>
+      <th>محصول</th>
+      <th>کنتور ابتدای دوره</th>
+      <th>کنتور انتهای دوره</th>
+      <th>کل عملکرد</th>
+      <th>کل فروش مکانیکی</th>
+      <th>کل مبلغ</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td class="numeric">{{ row.nozzle.number }}</td>
+      <td>{{ row.nozzle.tank.product.name|persian_product }}</td>
+      <td class="numeric">{{ row.beginning_of_month_meter|num }}</td>
+      <td class="numeric">{{ row.end_of_month_meter|num }}</td>
+      <td class="numeric">{{ row.total_operation|num }}</td>
+      <td class="numeric">{{ row.total_mechanical_sales|num }}</td>
+      <td class="numeric">{{ row.total_amount|num }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p class="print-empty-note">در این ماه اطلاعاتی یافت نشد.</p>
+{% endif %}
+{% endblock %}

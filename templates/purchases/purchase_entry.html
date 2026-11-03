@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% load jalali_tags %}
+{% load display_tags %}
+{% block title %}{% if editing %}ویرایش خرید{% else %}ثبت خرید جدید{% endif %} — {{ tank.product.name|persian_product }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width: 480px; margin: 0 auto;">
+  <h2 class="panel__title">
+    {% if editing %}ویرایش فاکتور خرید{% else %}فاکتور خرید جدید{% endif %} — {{ tank.product.name|persian_product }}
+    <span style="color: var(--color-ink-muted); font-size: 0.8rem; float: left;">
+      {{ working_day.date|jalali }}
+    </span>
+  </h2>
+
+  <form method="post" id="purchase-form" data-enter-next>
+    {% csrf_token %}
+
+    <div class="form-group">
+      <label class="form-label" for="{{ form.program_number.id_for_label }}">{{ form.program_number.label }}</label>
+      {{ form.program_number }}
+      {% for error in form.program_number.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.tanker_number.id_for_label }}">{{ form.tanker_number.label }}</label>
+      {{ form.tanker_number }}
+      {% for error in form.tanker_number.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.quantity.id_for_label }}">{{ form.quantity.label }}</label>
+      {{ form.quantity }}
+      {% for error in form.quantity.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.purchase_rate.id_for_label }}">{{ form.purchase_rate.label }}</label>
+      {{ form.purchase_rate }}
+      {% for error in form.purchase_rate.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+
+    <button type="submit" class="btn">{% if editing %}ذخیره تغییرات{% else %}ثبت خرید{% endif %}</button>
+  </form>
+
+  <p style="margin-top: 1rem; font-size: 0.8rem;">
+    <a href="{% url 'purchases:invoice_list' %}">بازگشت به فهرست خریدها</a>
+  </p>
+</div>
+
+{# Enter-to-next-field: the form's data-enter-next attribute enables the shared script (partials/_enter_next_field.html, included by base.html). #}
+{% endblock %}

@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% load jalali_tags %}
+{% load static %}
+{% load display_tags %}
+{% block title %}خرید — فهرست{% endblock %}
+{% block extra_head %}
+<script src="{% static 'js/jalali.js' %}"></script>
+{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+    <h2 class="panel__title" style="margin:0;"> فهرست فاکتور های خرید </h2>
+    <a href="{% url 'printing:purchases_ledger_print' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+       target="_blank" class="btn" style="display:inline-block; width:auto; padding:0.4rem 0.9rem; font-size:0.85rem;">
+      چاپ / PDF
+    </a>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+    <div>
+      <label class="form-label">از تاریخ</label>
+      <input type="text" inputmode="numeric" class="form-input jalali-date-input" placeholder="۱۴۰۵/۰۱/۰۱"
+             value="{{ start_date|jalali }}"
+             data-nav-template="?start_date=__ISO__&end_date={{ end_date|date:'Y-m-d' }}">
+    </div>
+    <div>
+      <label class="form-label">تا تاریخ</label>
+      <input type="text" inputmode="numeric" class="form-input jalali-date-input" placeholder="۱۴۰۵/۰۱/۰۱"
+             value="{{ end_date|jalali }}"
+             data-nav-template="?start_date={{ start_date|date:'Y-m-d' }}&end_date=__ISO__">
+    </div>
+  </div>
+
+  {% for row in tank_rows %}
+  <div style="margin-bottom: 1.75rem;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;">
+      <h3 style="margin:0; font-size:1rem;">{{ row.tank.product.name|persian_product }}</h3>
+      <a href="{% url 'purchases:purchase_entry' new_entry_date|date:'Y-m-d' row.tank.id %}"
+         class="btn" data-new-invoice-link{% if forloop.first %} title="میانبر صفحه‌کلید: کلید +"{% endif %}
+         style="display:inline-block; width:auto; padding:0.4rem 0.9rem; font-size:0.85rem;">
+        + فاکتور جدید
+      </a>
+    </div>
+
+    {% if row.invoices %}
+    <table style="width:100%; border-collapse: collapse; font-size: 0.85rem;">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--color-border); text-align: right;">
+          <th style="padding: 0.4rem;">تاریخ بارنامه</th>
+          <th style="padding: 0.4rem;">شماره ی بارنامه</th>
+          <th style="padding: 0.4rem;">شماره ی نفتکش</th>
+          <th style="padding: 0.4rem;">مقدار</th>
+          <th style="padding: 0.4rem;">نرخ</th>
+          <th style="padding: 0.4rem;">مبلغ کل</th>
+          <th style="padding: 0.4rem;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in row.invoices %}
+        <tr style="border-bottom: 1px solid var(--color-border);">
+          <td style="padding: 0.4rem;" class="numeric">{{ inv.working_day.date|jalali }}</td>
+          <td style="padding: 0.4rem;">{{ inv.program_number|default:"—" }}</td>
+          <td style="padding: 0.4rem;">{{ inv.tanker_number|default:"—" }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ inv.quantity|num }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ inv.purchase_rate|num }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ inv.total_amount|num }}</td>
+          <td style="padding: 0.4rem; white-space: nowrap;">
+            <a href="{% url 'purchases:purchase_edit' inv.working_day.date|date:'Y-m-d' inv.pk %}">ویرایش</a>
+            &nbsp;|&nbsp;
+            <a href="{% url 'purchases:purchase_delete' inv.working_day.date|date:'Y-m-d' inv.pk %}" style="color: var(--color-danger);">حذف فاکتور</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p style="color: var(--color-ink-muted); font-size: 0.85rem;">در بازه انتخاب‌شده خریدی برای این محصول ثبت نشده است.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  <p style="margin-top: 1rem; font-size: 0.8rem;">
+    <a href="{% url 'purchases:choose_date' %}">ثبت خرید برای روز دیگر</a>
+  </p>
+</div>
+<script>document.addEventListener('DOMContentLoaded', function () { JalaliCalendar.bindNavInputs(); });</script>
+<script>
+// "+" opens the new purchase invoice form without the mouse.
+//
+// It activates the FIRST "+ فاکتور جدید" button on this page (the first
+// product's table, i.e. بنزین معمولی) -- the very same link the mouse
+// button uses, so the destination, the working date and every other
+// behaviour are identical to clicking it.
+//
+//  * Works for the main-keyboard "+" (Shift + "=" on most layouts, or a
+//    direct "+" key on others) and the numeric keypad "+": all of them
+//    report event.key === '+'.
+//  * Never fires while the user is typing in or operating a text control
+//    (input, textarea, select, editable element), so a "+" typed in a date
+//    field stays a plain character.
+//  * Ctrl/Alt/Meta + "+" is left alone (browser zoom and other shortcuts).
+//  * Only one form is ever opened: key auto-repeat and a quick second
+//    press are ignored while the first navigation is under way. The flag
+//    is reset on pageshow (returning with the Back button can restore
+//    this page from the browser's cache) and after a short timeout.
+//  * This script lives only on the list page, so with the form itself (or
+//    any other section) open, "+" does nothing.
+(function () {
+  var opening = false;
+
+  function isTextControl(el) {
+    if (!el) return false;
+    var tag = (el.tagName || '').toLowerCase();
+    return tag === 'input' || tag === 'textarea' || tag === 'select' || !!el.isContentEditable;
+  }
+
+  window.addEventListener('pageshow', function () { opening = false; });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== '+') return;
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (isTextControl(e.target)) return;
+
+    var link = document.querySelector('a[data-new-invoice-link]');
+    if (!link) return;                    // nothing to open: leave the key alone
+
+    e.preventDefault();
+    if (e.repeat || opening) return;      // never open a second form
+    opening = true;
+    setTimeout(function () { opening = false; }, 1500);
+    link.click();
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load display_tags %}
+{% load jalali_tags %}
+{% block title %}واریزی‌ها — {{ decade_label }}{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+    <h2 class="panel__title" style="margin:0;">واریزی‌ها — {{ decade_label }}</h2>
+    <div style="display:flex; gap:0.5rem;">
+      <a href="{% url 'printing:deposit_decade_print' %}?year={{ year }}&month={{ month }}&decade={{ decade }}"
+         target="_blank" class="btn" style="display:inline-block; width:auto; padding:0.4rem 0.9rem; font-size:0.85rem;">
+        چاپ / PDF
+      </a>
+      <a href="{% url 'deposits:deposit_create' %}" class="btn" style="display:inline-block; width:auto; padding:0.4rem 0.9rem; font-size:0.85rem;">
+        ثبت اطلاعات جدید
+      </a>
+    </div>
+  </div>
+
+  <div class="dashboard-columns" id="decade-total" style="grid-template-columns: 1fr; margin-bottom: 1.25rem;">
+    <div>
+      <div class="form-label">مجموع واریزی دهه</div>
+      <div class="numeric" data-total="decade" style="font-size:1.3rem;">{{ decade_total|num }}</div>
+    </div>
+  </div>
+
+  {% if deposits %}
+  <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">
+    <thead>
+      <tr style="border-bottom: 2px solid var(--color-border); text-align: right;">
+        <th style="padding: 0.4rem;">تاریخ سند</th>
+        <th style="padding: 0.4rem;">شماره ی سند</th>
+        <th style="padding: 0.4rem;">مبلغ واریزی</th>
+        <th style="padding: 0.4rem;">مبلغ مابه التفاوت</th>
+        <th style="padding: 0.4rem;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for deposit in deposits %}
+      <tr style="border-bottom: 1px solid var(--color-border);">
+        <td style="padding: 0.4rem;" class="numeric">{{ deposit.date|jalali }}</td>
+        <td style="padding: 0.4rem;">{{ deposit.document_number|default:"—" }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ deposit.deposit_amount|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ deposit.difference_amount|num }}</td>
+        <td style="padding: 0.4rem;">
+          <a href="{% url 'deposits:deposit_edit' deposit.pk %}">ویرایش</a>
+          ·
+          <a href="{% url 'deposits:deposit_delete' deposit.pk %}">حذف</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p style="color: var(--color-ink-muted);">در این دهه واریزی ثبت نشده است.</p>
+  {% endif %}
+
+  <p style="margin-top: 1rem; font-size: 0.8rem;">
+    <a href="{% url 'deposits:deposit_list' %}?year={{ year }}&month={{ month }}">بازگشت به فهرست دهه‌ها</a>
+  </p>
+</div>
+{% endblock %}

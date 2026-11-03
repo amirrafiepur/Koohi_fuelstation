@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{% if editing %}ویرایش واریز{% else %}ثبت واریز جدید{% endif %}{% endblock %}
+{% block extra_head %}{{ form.media }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width: 480px; margin: 0 auto;">
+  <h2 class="panel__title">{% if editing %}ویرایش واریز{% else %}ثبت واریز جدید{% endif %}</h2>
+
+  <form method="post" data-enter-next>
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label" for="{{ form.date.id_for_label }}">{{ form.date.label }}</label>
+      {{ form.date }}
+      {% for error in form.date.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.year.id_for_label }}">{{ form.year.label }}</label>
+      {{ form.year }}
+      {% for error in form.year.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.month.id_for_label }}">{{ form.month.label }}</label>
+      {{ form.month }}
+      {% for error in form.month.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.decade.id_for_label }}">{{ form.decade.label }}</label>
+      {{ form.decade }}
+      {% for error in form.decade.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.deposit_amount.id_for_label }}">{{ form.deposit_amount.label }}</label>
+      {{ form.deposit_amount }}
+      {% for error in form.deposit_amount.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.difference_amount.id_for_label }}">{{ form.difference_amount.label }}</label>
+      {{ form.difference_amount }}
+      {% for error in form.difference_amount.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="{{ form.document_number.id_for_label }}">{{ form.document_number.label }}</label>
+      {{ form.document_number }}
+      {% for error in form.document_number.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+
+    <button type="submit" class="btn">{% if editing %}ذخیره تغییرات{% else %}ثبت واریز{% endif %}</button>
+  </form>
+
+  <p style="margin-top: 1rem; font-size: 0.8rem;">
+    <a href="{% url 'deposits:deposit_list' %}">بازگشت به فهرست واریزها</a>
+  </p>
+</div>
+{% endblock %}

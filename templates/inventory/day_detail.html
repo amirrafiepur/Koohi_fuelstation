@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% load jalali_tags %}
+{% load display_tags %}
+{% block title %}موجودی مخازن — {{ working_day.date|jalali }}{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h2 class="panel__title">
+    موجودی مخازن — <span class="numeric">{{ working_day.date|jalali }}</span>
+  </h2>
+
+  {% for row in rows %}
+  <div style="margin-bottom: 1.75rem; border: 1px solid var(--color-border); border-radius: var(--radius); padding: 1rem;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+      <h3 style="margin:0; font-size:1rem;">{{ row.tank.product.name|persian_product }}</h3>
+    </div>
+
+    {% if row.needs_opening_inventory %}
+      <div class="alert alert--warn">
+        این اولین روز ماه حسابداری است. لطفاً موجودی افتتاحیه این مخزن را ابتدا وارد کنید.
+        <br>
+        <a href="{% url 'inventory:opening_inventory_entry' working_day.date|date:'Y-m-d' row.tank.id %}"
+           class="btn" style="display:inline-block; width:auto; margin-top:0.5rem;">
+          ثبت موجودی افتتاحیه
+        </a>
+      </div>
+    {% elif not row.inventory_row %}
+      <div class="alert alert--warn">
+        موجودی واقعی برای این مخزن در این روز ثبت نشده است.
+        <br>
+        <a href="{% url 'inventory:actual_inventory_entry' working_day.date|date:'Y-m-d' row.tank.id %}"
+           class="btn" style="display:inline-block; width:auto; margin-top:0.5rem;">
+          ثبت موجودی واقعی
+        </a>
+      </div>
+    {% else %}
+      <div class="inventory-breakdown">
+        <div>
+          <div class="form-label">موجودی واقعی</div>
+          <div class="numeric" style="font-size:1.1rem;">{{ row.inventory_row.actual_inventory|num }}</div>
+        </div>
+        {% if row.breakdown %}
+        <div>
+          <div class="form-label">موجودی غیرواقعی</div>
+          <div class="numeric" style="font-size:1.1rem;">{{ row.breakdown.theoretical_inventory|num }}</div>
+        </div>
+        <div>
+          <div class="form-label">موجودی کل</div>
+          <div class="numeric" style="font-size:1.1rem;">{{ row.breakdown.total_inventory|num }}</div>
+        </div>
+        <div>
+          <div class="form-label">کسری</div>
+          <div class="numeric" style="font-size:1.1rem; {% if row.breakdown.shortage > 0 %}color: var(--color-danger);{% endif %}">
+            {{ row.breakdown.shortage|num }}
+          </div>
+        </div>
+        <div>
+          <div class="form-label">سرک</div>
+          <div class="numeric" style="font-size:1.1rem; {% if row.breakdown.overage > 0 %}color: var(--color-accent-warn-dark);{% endif %}">
+            {{ row.breakdown.overage|num }}
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <p style="margin-top:0.75rem; font-size:0.8rem;">
+        <a href="{% url 'inventory:actual_inventory_entry' working_day.date|date:'Y-m-d' row.tank.id %}">ویرایش موجودی واقعی</a>
+      </p>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  <p style="margin-top: 1rem; font-size: 0.8rem;">
+    <a href="{% url 'inventory:choose_date' %}">انتخاب تاریخ دیگر</a>
+  </p>
+</div>
+{% endblock %}

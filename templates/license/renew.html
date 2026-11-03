@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}تمدید لایسنس — ۱۴۰ جهانی‌پور{% endblock %}
+{% block content %}
+<div class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-card__header">
+      <h1>تمدید لایسنس</h1>
+      {% if already_valid %}
+        <p style="color: var(--color-success); font-size: 0.85rem;">لایسنس شما همچنان معتبر است.</p>
+      {% else %}
+        <p style="color: var(--color-danger); font-size: 0.85rem;">
+          اعتبار لایسنس این برنامه به پایان رسیده است. برای ادامه استفاده، رمز تمدید را وارد کنید.
+        </p>
+      {% endif %}
+    </div>
+
+    <form method="post" data-enter-next>
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label" for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+        {{ form.password }}
+        {% for error in form.password.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+      </div>
+      <button type="submit" class="btn">تمدید لایسنس</button>
+    </form>
+
+    {% if already_valid %}
+      <p style="margin-top:1rem; text-align:center;">
+        <a href="{% url 'core:dashboard' %}" style="color: var(--color-primary); font-size: 0.9rem;">بازگشت به داشبورد</a>
+      </p>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

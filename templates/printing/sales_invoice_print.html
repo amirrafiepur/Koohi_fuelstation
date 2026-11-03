@@ -1,0 +1,64 @@
+{% extends "printing/base_print.html" %}
+{% load jalali_tags %}
+{% load display_tags %}
+{% block body_class %}landscape{% endblock %}
+{% block title %}فاکتور فروش روزانه — {{ working_day.date|jalali }}{% endblock %}
+{% block report_title %}فاکتور فروش روزانه{% endblock %}
+{% block report_period %}{{ working_day.date|jalali }}{% endblock %}
+
+{% block report_body %}
+
+<table class="print-table" style="margin-bottom: 14px;">
+  <thead>
+    <tr>
+      <th>تعداد نازل</th>
+      <th>مجموع عملکرد</th>
+      <th>مجموع تست</th>
+      <th>مجموع فروش</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="numeric">{{ totals.nozzle_count|num }}</td>
+      <td class="numeric">{{ totals.total_operation|num }}</td>
+      <td class="numeric">{{ totals.total_test|num }}</td>
+      <td class="numeric">{{ totals.total_sales|num }}</td>
+    </tr>
+  </tbody>
+</table>
+
+{% if nozzle_sales %}
+<table class="print-table">
+  <thead>
+    <tr>
+      <th>نازل</th>
+      <th>محصول</th>
+      <th>کنتور قبلی</th>
+      <th>کنتور جدید</th>
+      <th>عملکرد</th>
+      <th>تست</th>
+      <th>فروش مکانیکی</th>
+      <th>نرخ</th>
+      <th>مبلغ کل</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for sale in nozzle_sales %}
+    <tr>
+      <td class="numeric">{{ sale.nozzle.number }}</td>
+      <td>{{ sale.nozzle.tank.product.name|persian_product }}</td>
+      <td class="numeric">{{ sale.previous_meter|num }}</td>
+      <td class="numeric">{{ sale.new_meter|num }}</td>
+      <td class="numeric">{{ sale.operation|num }}</td>
+      <td class="numeric">{{ sale.test|num }}</td>
+      <td class="numeric">{{ sale.mechanical_sales|num }}</td>
+      <td class="numeric">{{ sale.sales_rate|num }}</td>
+      <td class="numeric">{{ sale.total_amount|num }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p class="print-empty-note">برای این روز هیچ نازلی ثبت نشده است.</p>
+{% endif %}
+{% endblock %}

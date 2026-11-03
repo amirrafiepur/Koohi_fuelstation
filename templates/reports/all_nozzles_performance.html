@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load display_tags %}
+{% block title %}لیست اطلاعات فروش{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+    <h2 class="panel__title" style="margin:0;">لیست اطلاعات فروش</h2>
+    <a href="{% url 'printing:all_nozzles_performance_print' %}?year={{ year }}&month={{ month }}{% if selected_tank %}&tank_id={{ selected_tank.id }}{% endif %}"
+       target="_blank" class="btn" style="display:inline-block; width:auto; padding:0.4rem 0.9rem; font-size:0.85rem;">
+      چاپ / PDF
+    </a>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+    <div>
+      <label class="form-label">سال</label>
+      <input type="number" class="form-input numeric" value="{{ year }}"
+             onchange="window.location = '?year=' + this.value + '&month={{ month }}&tank_id={{ selected_tank.id }}'">
+    </div>
+    <div>
+      <label class="form-label">ماه</label>
+      <select class="form-input" onchange="window.location = '?year={{ year }}&month=' + this.value + '&tank_id={{ selected_tank.id }}'">
+        <option value="1" {% if month == 1 %}selected{% endif %}>۱</option>
+        <option value="2" {% if month == 2 %}selected{% endif %}>۲</option>
+        <option value="3" {% if month == 3 %}selected{% endif %}>۳</option>
+        <option value="4" {% if month == 4 %}selected{% endif %}>۴</option>
+        <option value="5" {% if month == 5 %}selected{% endif %}>۵</option>
+        <option value="6" {% if month == 6 %}selected{% endif %}>۶</option>
+        <option value="7" {% if month == 7 %}selected{% endif %}>۷</option>
+        <option value="8" {% if month == 8 %}selected{% endif %}>۸</option>
+        <option value="9" {% if month == 9 %}selected{% endif %}>۹</option>
+        <option value="10" {% if month == 10 %}selected{% endif %}>۱۰</option>
+        <option value="11" {% if month == 11 %}selected{% endif %}>۱۱</option>
+        <option value="12" {% if month == 12 %}selected{% endif %}>۱۲</option>
+      </select>
+    </div>
+    <div>
+      <label class="form-label">نوع سوخت</label>
+      <select class="form-input" id="fuel-select"
+              onchange="window.location = '?year={{ year }}&month={{ month }}&tank_id=' + this.value">
+        {% for tank in tanks %}
+        <option value="{{ tank.id }}" {% if selected_tank and tank.id == selected_tank.id %}selected{% endif %}>{{ tank.product.name|persian_product }}</option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="dashboard-columns" id="all-nozzles-totals" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 1.25rem;">
+    <div><div class="form-label">جمع کارکرد</div><div class="numeric" data-total="operation" style="font-size:1.3rem;">{{ totals.total_operation|num }}</div></div>
+    <div><div class="form-label">مجموع آزمایش</div><div class="numeric" data-total="test" style="font-size:1.3rem;">{{ totals.total_test|num }}</div></div>
+    <div><div class="form-label">مجموع فروش مکانیکی</div><div class="numeric" data-total="mechanical-sales" style="font-size:1.3rem;">{{ totals.total_mechanical_sales|num }}</div></div>
+    <div><div class="form-label">مجموع مبلغ کل</div><div class="numeric" data-total="amount" style="font-size:1.3rem;">{{ totals.total_amount|num }}</div></div>
+  </div>
+
+  <p id="table-mode-hint" hidden style="margin: 0 0 0.5rem 0; font-size: 0.8rem; color: var(--color-ink-muted);">
+    حالت پیمایش جدول فعال است — با ↑ و ↓ بین ردیف‌ها حرکت کنید؛ برای خروج، Enter را بزنید.
+  </p>
+  <table id="all-nozzles-table" class="row-nav-table" style="width:100%; border-collapse: collapse; font-size: 0.85rem;">
+    <thead>
+      <tr style="border-bottom: 2px solid var(--color-border); text-align: right;">
+        <th style="padding: 0.4rem;">شماره نازل</th>
+        <th style="padding: 0.4rem;">کنتور اول ماه</th>
+        <th style="padding: 0.4rem;">کنتور آخر ماه</th>
+        <th style="padding: 0.4rem;">جمع فروش مکانیکی</th>
+        <th style="padding: 0.4rem;">جمع آزمایش</th>
+        <th style="padding: 0.4rem;">جمع کارکرد</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr style="border-bottom: 1px solid var(--color-border);">
+        <td style="padding: 0.4rem;" class="numeric">{{ row.nozzle_number }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.first_meter|default_if_none:"—"|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.last_meter|default_if_none:"—"|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_mechanical_sales|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_test|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_operation|num }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+<script>
+// Enter -> blue row highlight and ArrowUp/Down row navigation (shared with
+// گزارش کارکرد هر نازل); Enter again leaves it. Outside table mode the
+// arrow keys keep their normal browser behaviour on this page.
+TableRowNavigation.init({
+  rowsSelector: '#all-nozzles-table tbody tr',
+  hintId: 'table-mode-hint'
+});
+</script>
+{% endblock %}

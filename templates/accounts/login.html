@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}ورود — ۱۴۰ جهانی‌پور{% endblock %}
+{% block content %}
+<div class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-card__header">
+      <h1>۱۴۰ جهانی‌پور</h1>
+      <p style="color: var(--color-ink-muted); font-size: 0.85rem;">ورود به سامانه حسابداری جایگاه</p>
+    </div>
+
+    {% if form.non_field_errors %}
+      <div class="alert alert--info">
+        {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+      </div>
+    {% endif %}
+
+    <form method="post" data-enter-next>
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label" for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+        {{ form.username }}
+        {% for error in form.username.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="{{ form.password.id_for_label }}">{{ form.password.label }}</label>
+        {{ form.password }}
+        {% for error in form.password.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+      </div>
+      <button type="submit" class="btn">ورود</button>
+    </form>
+
+    <div style="margin-top: 1rem; text-align: center;">
+      <a href="{% url 'accounts:forgot_password' %}" class="app-nav__link">رمز خود را فراموش کردم</a>
+    </div>
+
+    {% if first_run %}
+      <div style="margin-top: 1rem; text-align: center;">
+        <a href="{% url 'accounts:first_setup' %}" class="app-nav__link">راه‌اندازی اولیه سامانه</a>
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

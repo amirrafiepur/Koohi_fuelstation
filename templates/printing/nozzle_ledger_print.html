@@ -1,0 +1,45 @@
+{% extends "printing/base_print.html" %}
+{% load jalali_tags %}
+{% load display_tags %}
+{% block body_class %}landscape{% endblock %}
+{% block title %}گزارش کارکرد نازل {{ nozzle.number }}{% endblock %}
+{% block report_title %}گزارش کارکرد نازل — دفتر روزانه{% endblock %}
+{% block report_period %}
+  نازل {{ nozzle.number }} ({{ nozzle.tank.product.name|persian_product }}) —
+  از {{ start_date|jalali }} تا {{ end_date|jalali }}
+{% endblock %}
+
+{% block report_body %}
+{% if rows %}
+<table class="print-table">
+  <thead>
+    <tr>
+      <th>تاریخ</th>
+      <th>کنتور قبلی</th>
+      <th>آزمایش</th>
+      <th>فروش مکانیکی</th>
+      <th>جمع روزانه</th>
+      <th>جمع کل</th>
+      <th>کنتور جدید</th>
+      <th>نرخ</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td class="numeric">{{ row.date|jalali }}</td>
+      <td class="numeric">{{ row.previous_meter|num }}</td>
+      <td class="numeric">{{ row.test|num }}</td>
+      <td class="numeric">{{ row.mechanical_sales|num }}</td>
+      <td class="numeric">{{ row.daily_total|num }}</td>
+      <td class="numeric">{{ row.cumulative_total|num }}</td>
+      <td class="numeric">{{ row.new_meter|num }}</td>
+      <td class="numeric">{{ row.sales_rate|num }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p class="print-empty-note">در بازه انتخاب‌شده اطلاعاتی یافت نشد.</p>
+{% endif %}
+{% endblock %}

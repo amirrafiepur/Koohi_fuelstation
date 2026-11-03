@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% load display_tags %}
+{% block title %}گزارش ماهانه مخازن{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h2 class="panel__title">گزارش ماهانه مخازن</h2>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; align-items: end;">
+    <div>
+      <label class="form-label">سال</label>
+      <input type="number" class="form-input" value="{{ year }}"
+             onchange="window.location = '?year=' + this.value + '&month={{ month }}'">
+    </div>
+    <div>
+      <label class="form-label">ماه</label>
+      <select class="form-input" onchange="window.location = '?year={{ year }}&month=' + this.value">
+        <option value="1" {% if month == 1 %}selected{% endif %}>۱</option>
+        <option value="2" {% if month == 2 %}selected{% endif %}>۲</option>
+        <option value="3" {% if month == 3 %}selected{% endif %}>۳</option>
+        <option value="4" {% if month == 4 %}selected{% endif %}>۴</option>
+        <option value="5" {% if month == 5 %}selected{% endif %}>۵</option>
+        <option value="6" {% if month == 6 %}selected{% endif %}>۶</option>
+        <option value="7" {% if month == 7 %}selected{% endif %}>۷</option>
+        <option value="8" {% if month == 8 %}selected{% endif %}>۸</option>
+        <option value="9" {% if month == 9 %}selected{% endif %}>۹</option>
+        <option value="10" {% if month == 10 %}selected{% endif %}>۱۰</option>
+        <option value="11" {% if month == 11 %}selected{% endif %}>۱۱</option>
+        <option value="12" {% if month == 12 %}selected{% endif %}>۱۲</option>
+      </select>
+    </div>
+    {% if rows %}
+    <div>
+      <a href="{% url 'printing:petroleum_monthly_print' %}?year={{ year }}&month={{ month }}"
+         target="_blank" class="btn" style="display:inline-block; width:auto; padding:0.6rem 1rem;">
+        چاپ / PDF
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if rows %}
+  <table style="width:100%; border-collapse: collapse; font-size: 0.85rem;">
+    <thead>
+      <tr style="border-bottom: 2px solid var(--color-border); text-align: right;">
+        <th style="padding: 0.4rem;">محصول</th>
+        <th style="padding: 0.4rem;">موجودی ابتدای دوره</th>
+        <th style="padding: 0.4rem;">مجموع سرک</th>
+        <th style="padding: 0.4rem;">کل بازگشت تست</th>
+        <th style="padding: 0.4rem;">جمع کل رسیده</th>
+        <th style="padding: 0.4rem;">کل فروش</th>
+        <th style="padding: 0.4rem;">کل بازگشت تست</th>
+        <th style="padding: 0.4rem;">کل کسری</th>
+        <th style="padding: 0.4rem;">جمع کل خارج شده</th>
+        <th style="padding: 0.4rem;">موجودی آخر دوره</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr style="border-bottom: 1px solid var(--color-border);">
+        <td style="padding: 0.4rem;">{{ row.tank.product.name|persian_product }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.beginning_inventory|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_overage|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_test_return|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_received|default:"—"|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_sales|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_test_return|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_shortage|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_dispatched|default:"—"|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.ending_inventory|default:"—"|num }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p style="color: var(--color-ink-muted);">در این ماه اطلاعاتی یافت نشد.</p>
+  {% endif %}
+</div>
+{% endblock %}

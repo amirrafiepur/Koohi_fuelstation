@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% load jalali_tags %}
+{% block title %}انتخاب تاریخ کاری — موجودی مخازن{% endblock %}
+{% block extra_head %}{{ form.media }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width: 480px; margin: 0 auto;">
+  <h2 class="panel__title">انتخاب تاریخ کاری برای ثبت موجودی مخازن</h2>
+
+  {% if incomplete_days %}
+    <div class="alert alert--info">
+      {{ incomplete_days|length }} روز ناقص وجود دارد. اولین روز الزامی:
+      <strong class="numeric">{{ next_required_date|jalali }}</strong>
+    </div>
+  {% else %}
+    <div class="alert alert--success">تمام روزهای کاری تا امروز تکمیل شده‌اند.</div>
+  {% endif %}
+
+  <div class="alert alert--info" style="background:#F5F5F5; border-color:var(--color-border); color:var(--color-ink-muted);">
+    ثبت موجودی واقعی برای هر مخزن در هر روز کاری الزامی است.
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label" for="{{ form.date.id_for_label }}">{{ form.date.label }}</label>
+      {{ form.date }}
+      {% for error in form.date.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <button type="submit" class="btn">ادامه</button>
+  </form>
+</div>
+{% endblock %}

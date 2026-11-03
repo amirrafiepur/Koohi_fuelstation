@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% load jalali_tags %}
+{% load display_tags %}
+{% block title %}فاکتورهای خرید — {{ working_day.date|jalali }}{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h2 class="panel__title">
+    فاکتورهای خرید — <span class="numeric">{{ working_day.date|jalali }}</span>
+  </h2>
+
+  {% for row in tank_rows %}
+  <div style="margin-bottom: 1.75rem;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.5rem;">
+      <h3 style="margin:0; font-size:1rem;">{{ row.tank.product.name|persian_product }}</h3>
+      <div style="display:flex; align-items:center; gap:1rem;">
+        <span style="font-size:0.85rem; color:var(--color-ink-muted);">
+          مجموع خرید روز: <strong class="numeric">{{ row.daily_total|num }}</strong> لیتر
+        </span>
+        <a href="{% url 'purchases:purchase_entry' working_day.date|date:'Y-m-d' row.tank.id %}"
+           class="btn" style="display:inline-block; width:auto; padding:0.4rem 0.9rem; font-size:0.85rem;">
+          + فاکتور جدید
+        </a>
+      </div>
+    </div>
+
+    {% if row.invoices %}
+    <table style="width:100%; border-collapse: collapse; font-size: 0.85rem;">
+      <thead>
+        <tr style="border-bottom: 2px solid var(--color-border); text-align: right;">
+          <th style="padding: 0.4rem;">شماره سند</th>
+          <th style="padding: 0.4rem;">شماره تانکر</th>
+          <th style="padding: 0.4rem;">ظرفیت تانکر</th>
+          <th style="padding: 0.4rem;">مقدار</th>
+          <th style="padding: 0.4rem;">نرخ</th>
+          <th style="padding: 0.4rem;">مبلغ کل</th>
+          <th style="padding: 0.4rem;">زمان تخلیه</th>
+          <th style="padding: 0.4rem;"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for inv in row.invoices %}
+        <tr style="border-bottom: 1px solid var(--color-border);">
+          <td style="padding: 0.4rem;">{{ inv.document_number|default:"—" }}</td>
+          <td style="padding: 0.4rem;">{{ inv.tanker_number|default:"—" }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ inv.tanker_capacity|default:"—"|num }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ inv.quantity|num }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ inv.purchase_rate|num }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ inv.total_amount|num }}</td>
+          <td style="padding: 0.4rem;" class="numeric">{{ inv.unloading_time|time:"H:i"|default:"—" }}</td>
+          <td style="padding: 0.4rem;">
+            <a href="{% url 'purchases:purchase_edit' working_day.date|date:'Y-m-d' inv.pk %}">ویرایش</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+      <p style="color: var(--color-ink-muted); font-size: 0.85rem;">خریدی برای این محصول در این روز ثبت نشده است.</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+
+  <p style="margin-top: 1rem; font-size: 0.8rem;">
+    <a href="{% url 'purchases:choose_date' %}">انتخاب تاریخ دیگر</a>
+  </p>
+</div>
+{% endblock %}

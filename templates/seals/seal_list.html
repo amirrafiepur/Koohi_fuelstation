@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% load jalali_tags %}
+{% load static %}
+{% load display_tags %}
+{% block title %}پلمپ‌ها{% endblock %}
+{% block extra_head %}
+<script src="{% static 'js/jalali.js' %}"></script>
+{% endblock %}
+{% block content %}
+<div class="panel">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+    <h2 class="panel__title" style="margin:0; border:none; padding:0;">پلمپ‌ها</h2>
+    <div style="display:flex; gap:0.5rem;">
+      {% if seals %}
+      <a href="{% url 'printing:seals_print' %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+         target="_blank" class="btn" style="display:inline-block; width:auto; padding:0.5rem 1rem;">
+        چاپ / PDF
+      </a>
+      {% endif %}
+      <a href="{% url 'seals:seal_create' %}" class="btn" style="display:inline-block; width:auto; padding:0.5rem 1rem;">+ ثبت پلمپ جدید</a>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+    <div>
+      <label class="form-label">تاریخ اولیه</label>
+      <input type="text" inputmode="numeric" class="form-input jalali-date-input" placeholder="۱۴۰۵/۰۱/۰۱"
+             value="{{ start_date|jalali }}"
+             data-nav-template="?start_date=__ISO__&end_date={{ end_date|date:'Y-m-d' }}">
+    </div>
+    <div>
+      <label class="form-label">تاریخ ثانویه</label>
+      <input type="text" inputmode="numeric" class="form-input jalali-date-input" placeholder="۱۴۰۵/۰۱/۰۱"
+             value="{{ end_date|jalali }}"
+             data-nav-template="?start_date={{ start_date|date:'Y-m-d' }}&end_date=__ISO__">
+    </div>
+  </div>
+
+  {% if seals %}
+  <table style="width:100%; border-collapse: collapse; font-size: 0.85rem;">
+    <thead>
+      <tr style="border-bottom: 2px solid var(--color-border); text-align: right;">
+        <th style="padding: 0.4rem;">تاریخ</th>
+        <th style="padding: 0.4rem;">نازل</th>
+        <th style="padding: 0.4rem;">محصول</th>
+        <th style="padding: 0.4rem;">بخش</th>
+        <th style="padding: 0.4rem;">شماره پلمپ</th>
+        <th style="padding: 0.4rem;"></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for seal in seals %}
+      <tr style="border-bottom: 1px solid var(--color-border);">
+        <td style="padding: 0.4rem;" class="numeric">{{ seal.date|jalali }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ seal.nozzle.number }}</td>
+        <td style="padding: 0.4rem;">{{ seal.nozzle.tank.product.name|persian_product }}</td>
+        <td style="padding: 0.4rem;">{{ seal.get_section_display }}</td>
+        <td style="padding: 0.4rem;">{{ seal.seal_number }}</td>
+        <td style="padding: 0.4rem; display:flex; gap:0.75rem;">
+          <a href="{% url 'seals:seal_edit' seal.pk %}">ویرایش</a>
+          <a href="{% url 'seals:seal_delete' seal.pk %}" style="color: var(--color-danger);">حذف</a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p style="color: var(--color-ink-muted);">در بازه انتخاب‌شده پلمپی ثبت نشده است.</p>
+  {% endif %}
+</div>
+<script>document.addEventListener('DOMContentLoaded', function () { JalaliCalendar.bindNavInputs(); });</script>
+{% endblock %}

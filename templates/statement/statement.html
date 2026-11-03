@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load display_tags %}
+{% block title %}صورت وضعیت ماهانه{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1rem;">
+    <h2 class="panel__title" style="margin:0;">صورت وضعیت ماهانه</h2>
+    <a href="{% url 'printing:statement_print' %}?year={{ year }}&month={{ month }}"
+       target="_blank" class="btn" style="display:inline-block; width:auto; padding:0.5rem 1rem;">
+      چاپ / PDF
+    </a>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+    <div>
+      <label class="form-label">سال</label>
+      <input type="number" class="form-input numeric" value="{{ year }}"
+             onchange="window.location = '?year=' + this.value + '&month={{ month }}'">
+    </div>
+    <div>
+      <label class="form-label">ماه</label>
+      <select class="form-input" onchange="window.location = '?year={{ year }}&month=' + this.value">
+        <option value="1" {% if month == 1 %}selected{% endif %}>۱</option>
+        <option value="2" {% if month == 2 %}selected{% endif %}>۲</option>
+        <option value="3" {% if month == 3 %}selected{% endif %}>۳</option>
+        <option value="4" {% if month == 4 %}selected{% endif %}>۴</option>
+        <option value="5" {% if month == 5 %}selected{% endif %}>۵</option>
+        <option value="6" {% if month == 6 %}selected{% endif %}>۶</option>
+        <option value="7" {% if month == 7 %}selected{% endif %}>۷</option>
+        <option value="8" {% if month == 8 %}selected{% endif %}>۸</option>
+        <option value="9" {% if month == 9 %}selected{% endif %}>۹</option>
+        <option value="10" {% if month == 10 %}selected{% endif %}>۱۰</option>
+        <option value="11" {% if month == 11 %}selected{% endif %}>۱۱</option>
+        <option value="12" {% if month == 12 %}selected{% endif %}>۱۲</option>
+      </select>
+    </div>
+  </div>
+
+  <h3 style="font-size:0.95rem; margin-bottom:0.5rem;">رسیده / خارج شده</h3>
+  <div style="overflow-x: auto; margin-bottom: 2rem;">
+  <table style="width:100%; border-collapse: collapse; font-size: 0.78rem;">
+    <thead>
+      <tr>
+        <th colspan="6" style="padding: 0.5rem; text-align:center; background: var(--color-surface-alt, #f3f3f3); border-bottom: 2px solid var(--color-border);">رسیده</th>
+        <th colspan="5" style="padding: 0.5rem; text-align:center; background: var(--color-surface-alt, #f3f3f3); border-bottom: 2px solid var(--color-border); border-right: 3px solid var(--color-primary);">خارج شده</th>
+      </tr>
+      <tr style="border-bottom: 2px solid var(--color-border); text-align: right;">
+        <th style="padding: 0.4rem;">نوع فرآورده</th>
+        <th style="padding: 0.4rem;">موجودی اول ماه</th>
+        <th style="padding: 0.4rem;">مقدار رسیده</th>
+        <th style="padding: 0.4rem;">آزمایش</th>
+        <th style="padding: 0.4rem;">سرک</th>
+        <th style="padding: 0.4rem;">جمع کل</th>
+        <th style="padding: 0.4rem; border-right: 3px solid var(--color-primary);">مقدار فروش</th>
+        <th style="padding: 0.4rem;">آزمایش</th>
+        <th style="padding: 0.4rem;">کسری</th>
+        <th style="padding: 0.4rem;">موجودی آخر ماه</th>
+        <th style="padding: 0.4rem;">جمع کل خارج شده</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr style="border-bottom: 1px solid var(--color-border);">
+        <td style="padding: 0.4rem;">{{ row.product.name|persian_product }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.beginning_inventory|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_purchase|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_test_return|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_overage|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.received_total|num }}</td>
+        <td style="padding: 0.4rem; border-right: 3px solid var(--color-primary);" class="numeric">{{ row.total_sales|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_test_return|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_shortage|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.ending_inventory|default:"—"|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.dispatched_total|num }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+
+  <h3 style="font-size:0.95rem; margin-bottom:0.5rem;">اطلاعات تکمیلی</h3>
+  <div style="overflow-x: auto;">
+  <table style="width:100%; border-collapse: collapse; font-size: 0.8rem;">
+    <thead>
+      <tr style="border-bottom: 2px solid var(--color-border); text-align: right;">
+        <th style="padding: 0.4rem;">نوع فرآورده</th>
+        <th style="padding: 0.4rem;">اختلاف فروش دیجیتال و مکانیکی</th>
+        <th style="padding: 0.4rem;">پورسانت</th>
+        <th style="padding: 0.4rem;">مقدار لیتراژ کسری غیرمجازه</th>
+        <th style="padding: 0.4rem;">جمع کل رسیده</th>
+        <th style="padding: 0.4rem;">تعداد نفتکش</th>
+        <th style="padding: 0.4rem;">ظرفیت نفتکش</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr style="border-bottom: 1px solid var(--color-border);">
+        <td style="padding: 0.4rem;">{{ row.product.name|persian_product }}</td>
+        <td style="padding: 0.4rem;">
+          {% if row.digital_sales_difference is not None %}
+            <span class="numeric">{{ row.digital_sales_difference|num }}</span>
+          {% else %}
+            <span class="numeric" style="color: var(--color-ink-muted);">—</span>
+          {% endif %}
+          <a href="{% url 'statement:digital_sales_entry' row.entry.id %}"
+             style="display:block; font-size:0.75rem; margin-top:0.2rem;">
+            ورود فروش دیجیتال
+          </a>
+        </td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.commission|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.unauthorized_shortage_shown|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_received|default:"—"|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.tanker_count|num }}</td>
+        <td style="padding: 0.4rem;">
+          <form method="post" action="{% url 'statement:tanker_capacity_entry' row.entry.id %}"
+                style="display:flex; gap:0.4rem; align-items:center;">
+            {% csrf_token %}
+            <input type="number" name="tanker_capacity" class="form-input numeric"
+                   value="{{ row.tanker_capacity }}" style="width:6rem; padding:0.2rem 0.4rem;">
+            <button type="submit" class="btn" style="width:auto; padding:0.2rem 0.6rem; font-size:0.75rem;">ثبت</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</div>
+{% endblock %}

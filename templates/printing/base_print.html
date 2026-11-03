@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}گزارش{% endblock %}</title>
+  <link rel="stylesheet" href="css/print.css">
+</head>
+<body class="{% block body_class %}{% endblock %}">
+  <div class="print-header">
+    <div>
+      <p class="print-header__station-name">{{ station.name }}</p>
+      <p class="print-header__station-location">{{ station.city }}، {{ station.province }}</p>
+    </div>
+    <div>
+      <div class="print-header__report-title">{% block report_title %}{% endblock %}</div>
+      <div class="print-header__report-period">{% block report_period %}{% endblock %}</div>
+    </div>
+  </div>
+
+  {% block report_body %}{% endblock %}
+
+  <p class="print-footer-note">
+    این گزارش به‌صورت خودکار از سامانه حسابداری جایگاه تولید شده است.
+  </p>
+</body>
+</html>

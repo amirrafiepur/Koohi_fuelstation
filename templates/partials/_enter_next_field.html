@@ -1,0 +1,85 @@
+{% comment %}
+Enter-to-next-field for data-entry forms (minimize mouse usage). Included
+once by base.html; a form opts in with the attribute  data-enter-next.
+
+  * Enter in any field except the last moves focus to the next field in
+    form order (and selects its content, like Tab does, so a pre-filled
+    value can be typed over).
+  * Enter in the last field submits the form exactly as the submit button
+    would (form.requestSubmit with the form's own submit button), so
+    required-field/validation behaviour is unchanged -- an invalid form
+    stays on the page and the browser points at the problem.
+  * Optional fields may stay empty: Enter simply moves past them.
+  * Fields are inputs and selects that are visible, enabled and editable;
+    hidden/readonly/disabled inputs, checkboxes, radios, files and buttons
+    are skipped. Textareas keep Enter as a new line.
+  * Never active outside a marked form: tables, filters, links, buttons and
+    every other page element keep their normal Enter behaviour, and the
+    Enter-driven table navigation (partials/_table_row_navigation.html)
+    ignores keys pressed inside form fields, so the two never collide.
+  * Shift/Ctrl/Alt/Meta+Enter, IME composition and key auto-repeat are left
+    alone or swallowed safely (a held Enter can neither skip through the
+    form nor submit it repeatedly).
+
+Written as one delegated listener so it works for however many fields a
+form has, in whatever order, and never needs updating when fields change.
+{% endcomment %}
+<script>
+(function () {
+  var NOT_FIELDS = ['hidden', 'submit', 'button', 'reset', 'image', 'file', 'checkbox', 'radio'];
+
+  function isUsable(el) {
+    if (el.disabled || el.readOnly) return false;
+    if (el.tabIndex < 0) return false;
+    if (el.closest('[hidden]')) return false;
+    var style = window.getComputedStyle ? window.getComputedStyle(el) : null;
+    if (style && (style.display === 'none' || style.visibility === 'hidden')) return false;
+    return true;
+  }
+
+  function fieldsOf(form) {
+    return Array.prototype.slice.call(form.querySelectorAll('input, select')).filter(function (el) {
+      if (el.tagName.toLowerCase() === 'input' && NOT_FIELDS.indexOf((el.type || 'text').toLowerCase()) !== -1) return false;
+      return isUsable(el);
+    });
+  }
+
+  function submitterOf(form) {
+    return form.querySelector('button[type="submit"], button:not([type]), input[type="submit"]');
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' || e.defaultPrevented) return;
+    if (e.shiftKey || e.ctrlKey || e.altKey || e.metaKey || e.isComposing) return;
+
+    var target = e.target;
+    var form = target && target.closest ? target.closest('form[data-enter-next]') : null;
+    if (!form) return;
+
+    var fields = fieldsOf(form);
+    var index = fields.indexOf(target);
+    if (index === -1) return;                 // a button, link, textarea, ...: normal behaviour
+
+    e.preventDefault();
+    if (e.repeat) return;                     // held Enter: no skipping, no repeated submits
+
+    if (index < fields.length - 1) {
+      var next = fields[index + 1];
+      next.focus();
+      if (next.tagName.toLowerCase() === 'input' && typeof next.select === 'function') {
+        try { next.select(); } catch (err) { /* some input types cannot be selected */ }
+      }
+      return;
+    }
+
+    var button = submitterOf(form);
+    if (typeof form.requestSubmit === 'function') {
+      form.requestSubmit(button || undefined);
+    } else if (button) {
+      button.click();
+    } else {
+      form.submit();
+    }
+  });
+})();
+</script>

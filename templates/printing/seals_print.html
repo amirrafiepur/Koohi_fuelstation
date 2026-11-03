@@ -1,0 +1,37 @@
+{% extends "printing/base_print.html" %}
+{% load jalali_tags %}
+{% load display_tags %}
+{% block title %}پلمپ‌ها{% endblock %}
+{% block report_title %}پلمپ‌ها{% endblock %}
+{% block report_period %}
+  از {{ start_date|jalali }} تا {{ end_date|jalali }}
+{% endblock %}
+
+{% block report_body %}
+{% if seals %}
+<table class="print-table">
+  <thead>
+    <tr>
+      <th>تاریخ</th>
+      <th>نازل</th>
+      <th>محصول</th>
+      <th>بخش</th>
+      <th>شماره پلمپ</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for seal in seals %}
+    <tr>
+      <td class="numeric">{{ seal.date|jalali }}</td>
+      <td class="numeric">{{ seal.nozzle.number }}</td>
+      <td>{{ seal.nozzle.tank.product.name|persian_product }}</td>
+      <td>{{ seal.get_section_display }}</td>
+      <td>{{ seal.seal_number }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+  <p class="print-empty-note">در بازه انتخاب‌شده پلمپی ثبت نشده است.</p>
+{% endif %}
+{% endblock %}

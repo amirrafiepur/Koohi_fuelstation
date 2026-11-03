@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% load jalali_tags %}
+{% load display_tags %}
+{% block title %}موجودی واقعی — {{ tank.product.name|persian_product }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width: 480px; margin: 0 auto;">
+  <h2 class="panel__title">
+    موجودی واقعی مخزن {{ tank.product.name|persian_product }}
+    <span style="color: var(--color-ink-muted); font-size: 0.8rem; float: left;">
+      {{ working_day.date|jalali }}
+    </span>
+  </h2>
+
+  <p style="font-size: 0.85rem; color: var(--color-ink-muted); margin-bottom: 1rem;">
+    مقادیر زیر به‌صورت خودکار محاسبه شده‌اند. فقط «موجودی واقعی» را وارد کنید.
+  </p>
+
+  <div class="form-group">
+    <div class="form-label">مانده از قبل</div>
+    <div class="form-input form-input--locked numeric">{{ previous_balance|num }}</div>
+  </div>
+  <div class="form-group">
+    <div class="form-label">خرید روزانه</div>
+    <div class="form-input form-input--locked numeric">{{ daily_purchase|num }}</div>
+  </div>
+  <div class="form-group">
+    <div class="form-label">بازگشت از آزمایش</div>
+    <div class="form-input form-input--locked numeric">{{ test_return|num }}</div>
+  </div>
+  <div class="form-group">
+    <div class="form-label">جمع کل</div>
+    <div class="form-input form-input--locked numeric">{{ total_inventory|num }}</div>
+  </div>
+  <div class="form-group">
+    <div class="form-label">فروش روزانه</div>
+    <div class="form-input form-input--locked numeric">{{ daily_sales|num }}</div>
+  </div>
+  <div class="form-group">
+    <div class="form-label">موجودی غیرواقعی</div>
+    <div class="form-input form-input--locked numeric">{{ theoretical_inventory|num }}</div>
+  </div>
+  <div class="form-group">
+    <div class="form-label">آزمایش</div>
+    <div class="form-input form-input--locked numeric">{{ test_return|num }}</div>
+  </div>
+
+  <form method="post" data-enter-next>
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label" for="{{ form.actual_inventory.id_for_label }}">{{ form.actual_inventory.label }}</label>
+      {{ form.actual_inventory }}
+      {% for error in form.actual_inventory.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <button type="submit" class="btn">ذخیره</button>
+  </form>
+
+  <p style="margin-top: 1rem; font-size: 0.8rem;">
+    <a href="{% url 'inventory:day_detail' working_day.date|date:'Y-m-d' %}">بازگشت</a>
+  </p>
+</div>
+{% endblock %}

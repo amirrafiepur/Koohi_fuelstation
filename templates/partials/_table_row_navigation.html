@@ -1,0 +1,181 @@
+{% comment %}
+Keyboard navigation for report/list tables (no mouse needed). Included ONCE
+by base.html, so it is available on every page and every table in the
+project; nothing needs to be added per page.
+
+  Enter      switches table navigation on: the first row is highlighted in
+             blue. Enter again switches it off and removes the highlight.
+  ArrowDown  next row.     ArrowUp  previous row.   Both stop at the first
+             and last row, and the page scrolls just enough to keep the
+             selected row in view.
+
+Which rows: by default every body row of every table inside <main>
+(`main table > tbody > tr`), in page order, as one continuous list -- on a
+page with two tables (e.g. بنزین معمولی / سوپر) the arrows simply carry on
+from the first table into the second. A table opts out with
+data-row-nav="off". Placeholder rows (a single cell spanning the table,
+such as "no data") are skipped. Rows tied together by a rowspan (e.g. the
+petroleum ledger's day with several purchase invoices) move and highlight
+as ONE row, so the highlight never covers only half of a day.
+
+A page that needs more configures it with TableRowNavigation.init({...}):
+  rowsSelector             which rows to navigate (default as above)
+  hintId                   an element on the page shown while navigating
+                           (a small fixed hint is created if none is given)
+  onArrowOutsideTableMode  function(event) called for ArrowUp/ArrowDown when
+                           table navigation is OFF (the nozzle ledger uses
+                           it to change nozzles); with none, the arrows keep
+                           their normal browser behaviour.
+
+Enter does nothing except toggle the mode, and only when there is a row to
+navigate. Every key is ignored while the user is typing in or operating a
+control (input, select, textarea, button, link, editable element) and when
+Ctrl/Alt/Meta is held, so it never collides with the Enter-to-next-field
+script (partials/_enter_next_field.html), form fields, the "+" shortcut on
+the purchases list, or any browser shortcut.
+{% endcomment %}
+<style>
+  /* The selected row in table-navigation mode. !important so the highlight
+     wins over any inline cell styling; scroll-margin keeps a little context
+     visible around the row when the page scrolls to follow it. */
+  main table > tbody > tr { scroll-margin-block: 2.5rem; }
+  tr.row-selected td { background: #1d4ed8 !important; color: #fff !important; }
+  tr.row-selected td a { color: #fff !important; }
+  #table-nav-hint {
+    position: fixed; bottom: 1rem; left: 50%; transform: translateX(-50%);
+    background: #1d4ed8; color: #fff; padding: 0.35rem 0.9rem; border-radius: 999px;
+    font-size: 0.8rem; z-index: 50; box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  }
+  #table-nav-hint[hidden] { display: none; }
+</style>
+<script>
+window.TableRowNavigation = (function () {
+  var AUTO_ROWS = 'main table:not([data-row-nav="off"]) > tbody > tr';
+  var AUTO_HINT_TEXT = 'پیمایش جدول فعال است — ↑ و ↓ برای حرکت بین ردیف‌ها، Enter برای خروج';
+
+  var config = { rowsSelector: AUTO_ROWS };   // replaced by an explicit init()
+  var tableMode = false;
+  var selectedIndex = -1;
+  var autoHint = null;
+
+  function isInteractive(el) {
+    if (!el) return false;
+    var tag = (el.tagName || '').toLowerCase();
+    return tag === 'input' || tag === 'textarea' || tag === 'select' ||
+           tag === 'button' || tag === 'a' || tag === 'summary' ||
+           !!el.isContentEditable;
+  }
+
+  function isPlaceholder(tr) {
+    return tr.cells.length === 1 && tr.cells[0].colSpan > 1;
+  }
+
+  // Rows -> navigable units. A unit is one <tr>, or several when a rowspan
+  // ties them together.
+  function groups() {
+    var result = [];
+    var remaining = 0;
+    var previous = null;
+    Array.prototype.forEach.call(document.querySelectorAll(config.rowsSelector), function (tr) {
+      if (previous && tr.parentNode !== previous.parentNode) remaining = 0;   // new table
+      previous = tr;
+      if (isPlaceholder(tr)) { remaining = 0; return; }
+      if (remaining > 0 && result.length) {
+        result[result.length - 1].push(tr);
+        remaining--;
+        return;
+      }
+      var span = 1;
+      Array.prototype.forEach.call(tr.cells, function (cell) {
+        if (cell.rowSpan > span) span = cell.rowSpan;
+      });
+      result.push([tr]);
+      remaining = span - 1;
+    });
+    return result;
+  }
+
+  function highlight(list, index) {
+    list.forEach(function (unit, i) {
+      unit.forEach(function (tr) {
+        if (i === index) {
+          tr.classList.add('row-selected');
+          tr.setAttribute('aria-selected', 'true');
+        } else {
+          tr.classList.remove('row-selected');
+          tr.removeAttribute('aria-selected');
+        }
+      });
+    });
+    selectedIndex = index;
+    if (index >= 0 && list[index]) {
+      var unit = list[index];
+      // 'nearest' scrolls only as far as needed; for a multi-row unit make
+      // both its last and its first row visible.
+      if (unit.length > 1) unit[unit.length - 1].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      unit[0].scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }
+  }
+
+  function hintElement() {
+    if (config.hintId) return document.getElementById(config.hintId);
+    if (!autoHint) {
+      autoHint = document.createElement('div');
+      autoHint.id = 'table-nav-hint';
+      autoHint.hidden = true;
+      autoHint.textContent = AUTO_HINT_TEXT;
+      document.body.appendChild(autoHint);
+    }
+    return autoHint;
+  }
+
+  function setHint(visible) {
+    var hint = hintElement();
+    if (hint) hint.hidden = !visible;
+  }
+
+  function init(opts) {
+    config = { rowsSelector: AUTO_ROWS };
+    for (var key in opts) { if (Object.prototype.hasOwnProperty.call(opts, key)) config[key] = opts[key]; }
+    tableMode = false;
+    selectedIndex = -1;
+  }
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter' && e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
+    if (isInteractive(e.target)) return;
+
+    if (e.key === 'Enter') {
+      var list = groups();
+      if (list.length === 0) return;      // nothing to navigate: leave Enter alone
+      e.preventDefault();
+      if (e.repeat) return;               // holding Enter must not flicker the mode
+      if (tableMode) {
+        tableMode = false;
+        setHint(false);
+        highlight(list, -1);
+      } else {
+        tableMode = true;
+        setHint(true);
+        highlight(list, 0);
+      }
+      return;
+    }
+
+    if (tableMode) {
+      var now = groups();
+      if (now.length === 0) return;
+      e.preventDefault();                 // arrows move the selection, not the page
+      var step = e.key === 'ArrowDown' ? 1 : -1;
+      var target = Math.min(Math.max(selectedIndex + step, 0), now.length - 1);
+      if (target !== selectedIndex) highlight(now, target);
+      return;
+    }
+
+    if (config.onArrowOutsideTableMode) config.onArrowOutsideTableMode(e);
+  });
+
+  return { init: init };
+})();
+</script>

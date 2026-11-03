@@ -1,0 +1,220 @@
+/* =====================================================================
+   Print stylesheet for all printable reports (WeasyPrint / A4).
+   Loaded only by printing/base_print.html -- never by on-screen templates.
+
+   Design goals (Task 2A): black-and-white, printer-friendly; the table
+   and its numbers get as much of the sheet as possible -- large type,
+   hairline grid lines, tight padding, small page margins. Wide reports
+   (many columns) opt into landscape via <body class="landscape"> so
+   their numbers stay large instead of shrinking to fit a portrait page.
+   ===================================================================== */
+
+/* Vazirmatn (SIL OFL 1.1) bundled locally in fonts/vazirmatn/ -- the
+   target machine runs fully offline (no internet during normal use), so
+   the font must not depend on a CDN. See fonts/vazirmatn/OFL.txt for the
+   license. Only the weights this stylesheet actually uses are bundled:
+   400 for body text, 500 for numbers and the page-footer counter, 700
+   for headings and table headers/totals. */
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../fonts/vazirmatn/Vazirmatn-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../fonts/vazirmatn/Vazirmatn-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'Vazirmatn';
+  src: url('../fonts/vazirmatn/Vazirmatn-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+@page {
+  size: A4 portrait;
+  margin: 8mm 8mm 12mm 8mm;
+
+  @bottom-center {
+    content: "صفحه " counter(page) " از " counter(pages);
+    font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+    font-weight: 500;
+    font-size: 11px;
+    color: #000;
+  }
+}
+
+/* Wide reports: same sheet, turned sideways (A4 landscape). */
+@page landscape {
+  size: A4 landscape;
+  margin: 8mm 8mm 12mm 8mm;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  direction: rtl;
+}
+
+body {
+  margin: 0;
+  font-family: 'Vazirmatn', 'Tahoma', sans-serif;
+  font-size: 14px;
+  line-height: 1.3;
+  font-weight: 400;
+  color: #000;
+  background: #fff;
+  direction: rtl;
+}
+
+body.landscape {
+  page: landscape;
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ---------------------------------------------------------------------
+   Report header: station identity + report title/period, required on
+   every printed report per Architecture v3.
+   --------------------------------------------------------------------- */
+
+.print-header {
+  border-bottom: 1.5px solid #000;
+  padding-bottom: 4px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.print-header__station-name {
+  font-size: 20px;
+  font-weight: 700;
+  margin: 0 0 1px 0;
+}
+
+.print-header__station-location {
+  font-size: 13px;
+  color: #000;
+  margin: 0;
+}
+
+.print-header__report-title {
+  text-align: left;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.print-header__report-period {
+  text-align: left;
+  font-size: 13px;
+  font-weight: 500;
+  color: #000;
+  margin-top: 1px;
+}
+
+h3 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #000;
+}
+
+/* ---------------------------------------------------------------------
+   Tables: RTL column order (matches on-screen ordering), header repeats
+   on every page when a table spans multiple pages, rows avoid being
+   split across a page break where technically possible.
+
+   Hairline black grid (0.5px) and tight cell padding so the figures,
+   not the borders and whitespace, take up the page; numbers are set a
+   weight heavier than text for legibility on a plain B&W printer.
+   --------------------------------------------------------------------- */
+
+table.print-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+body.landscape table.print-table {
+  font-size: 15px;
+}
+
+/* Many-column ledgers (e.g. the 14-column petroleum ledger). */
+body.dense table.print-table {
+  font-size: 12px;
+}
+
+table.print-table thead {
+  display: table-header-group; /* repeats table header on each printed page */
+}
+
+table.print-table tr {
+  page-break-inside: avoid;
+}
+
+table.print-table th,
+table.print-table td {
+  border: 0.5px solid #000;
+  padding: 2px 4px;
+  line-height: 1.25;
+  text-align: right;
+}
+
+table.print-table td.numeric {
+  font-weight: 500;
+}
+
+table.print-table thead th {
+  background: #e4e4e4;
+  color: #000;
+  font-weight: 700;
+  border-bottom: 1.5px solid #000;
+}
+
+table.print-table tfoot td {
+  font-weight: 700;
+  border-top: 1.5px solid #000;
+  background: #e4e4e4;
+}
+
+/* "مجموع اطلاعات" strip printed above a main table: same table look,
+   with the totals set larger since they are the figures read first. */
+table.print-table.print-summary {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+
+table.print-table.print-summary td {
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+}
+
+table.print-table.print-summary th {
+  text-align: center;
+}
+
+.print-empty-note {
+  font-size: 13px;
+  color: #000;
+  margin-top: 8px;
+}
+
+.print-footer-note {
+  margin-top: 8px;
+  font-size: 10px;
+  color: #000;
+}

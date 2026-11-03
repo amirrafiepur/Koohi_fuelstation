@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}راه‌اندازی اولیه — ۱۴۰ جهانی‌پور{% endblock %}
+{% block content %}
+<div class="auth-shell">
+  <div class="auth-card">
+    <div class="auth-card__header">
+      <h1>۱۴۰ جهانی‌پور</h1>
+      <p style="color: var(--color-ink-muted); font-size: 0.85rem;">راه‌اندازی اولیه سامانه</p>
+    </div>
+
+    {% if locked %}
+    <div class="alert alert--info">
+      راه‌اندازی اولیه به‌دلیل تعداد تلاش‌های ناموفق، برای همیشه غیرفعال شده است.
+      برای ادامه با پشتیبانی تماس بگیرید.
+    </div>
+    {% else %}
+    <div class="alert alert--info">
+      اولین حساب کاربری این سامانه را ایجاد کنید. این حساب تنها حساب کاربری برنامه خواهد بود.
+      پس از ایجاد آن، دوره ۳۶۵ روزه لایسنس به‌صورت خودکار آغاز می‌شود.
+    </div>
+
+    {% if form.non_field_errors %}
+    <div class="alert alert--info">
+      {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" data-enter-next>
+      {% csrf_token %}
+      <div class="form-group">
+        <label class="form-label" for="{{ form.setup_password.id_for_label }}">{{ form.setup_password.label }}</label>
+        {{ form.setup_password }}
+        {% for error in form.setup_password.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="{{ form.username.id_for_label }}">{{ form.username.label }}</label>
+        {{ form.username }}
+        {% for error in form.username.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="{{ form.password1.id_for_label }}">گذرواژه</label>
+        {{ form.password1 }}
+        {% for error in form.password1.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="{{ form.password2.id_for_label }}">تکرار گذرواژه</label>
+        {{ form.password2 }}
+        {% for error in form.password2.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="{{ form.security_question.id_for_label }}">{{ form.security_question.label }}</label>
+        {{ form.security_question }}
+        {% for error in form.security_question.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="{{ form.security_answer.id_for_label }}">{{ form.security_answer.label }}</label>
+        {{ form.security_answer }}
+        {% for error in form.security_answer.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+      </div>
+      <button type="submit" class="btn">ایجاد حساب و شروع لایسنس</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

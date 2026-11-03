@@ -1,0 +1,11 @@
+# Runtime + test/build dependencies for Python 3.11.x on Windows x86-64.
+# Versions are intentionally pinned for reproducible Phase 9-13 builds.
+
+Django==5.2.17
+waitress==3.0.2
+PySide6==6.9.3
+WeasyPrint==69.0
+pypdf==6.16.2
+PyInstaller==6.22.2
+whitenoise==6.12.0
+jdatetime==6.1.0

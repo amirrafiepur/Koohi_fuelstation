@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load display_tags %}
+{% block title %}موجودی افتتاحیه — {{ tank.product.name|persian_product }}{% endblock %}
+{% block content %}
+<div class="panel" style="max-width: 480px; margin: 0 auto;">
+  <h2 class="panel__title">موجودی افتتاحیه مخزن {{ tank.product.name|persian_product }}</h2>
+
+  <p style="font-size: 0.85rem; color: var(--color-ink-muted); margin-bottom: 1rem;">
+    اگر موجودی واقعی ابتدای ماه را از دفتر یا سوابق قبلی دارید، آن را وارد کنید.
+    در غیر این صورت مقدار پیش‌فرض صفر در نظر گرفته می‌شود.
+  </p>
+
+  <form method="post" data-enter-next>
+    {% csrf_token %}
+    <div class="form-group">
+      <label class="form-label" for="{{ form.opening_quantity.id_for_label }}">{{ form.opening_quantity.label }}</label>
+      {{ form.opening_quantity }}
+      {% for error in form.opening_quantity.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
+    </div>
+    <button type="submit" class="btn">ذخیره</button>
+  </form>
+
+  <p style="margin-top: 1rem; font-size: 0.8rem;">
+    <a href="{% url 'inventory:day_detail' working_day.date|date:'Y-m-d' %}">بازگشت</a>
+  </p>
+</div>
+{% endblock %}

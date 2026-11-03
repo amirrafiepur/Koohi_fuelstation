@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% load jalali_tags %}
+{% load display_tags %}
+{% block title %}حذف فاکتور خرید{% endblock %}
+{% block content %}
+<div class="panel" style="max-width: 480px; margin: 0 auto;">
+  <h2 class="panel__title">حذف فاکتور خرید</h2>
+
+  <div class="alert alert--info">
+    آیا از حذف فاکتور خرید {{ invoice.tank.product.name|persian_product }}
+    ({{ invoice.working_day.date|jalali }} — شماره ی بارنامه {{ invoice.program_number|default:"—" }} —
+    شماره ی نفتکش {{ invoice.tanker_number|default:"—" }} — مقدار {{ invoice.quantity|num }}) اطمینان دارید؟
+    این عملیات قابل بازگشت نیست.
+  </div>
+
+  <form method="post">
+    {% csrf_token %}
+    <button type="submit" class="btn" style="background: var(--color-danger);">بله، حذف شود</button>
+  </form>
+
+  <p style="margin-top: 1rem; font-size: 0.8rem;">
+    <a href="{% url 'purchases:invoice_list' %}">انصراف و بازگشت</a>
+  </p>
+</div>
+{% endblock %}

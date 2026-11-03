@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% load display_tags %}
+{% block title %}گزارش کارکرد نازل‌ها — ماهانه{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h2 class="panel__title">گزارش کارکرد نازل‌ها — ماهانه</h2>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; align-items: end;">
+    <div>
+      <label class="form-label">سال</label>
+      <input type="number" class="form-input" value="{{ year }}"
+             onchange="window.location = '?year=' + this.value + '&month={{ month }}'">
+    </div>
+    <div>
+      <label class="form-label">ماه</label>
+      <select class="form-input" onchange="window.location = '?year={{ year }}&month=' + this.value">
+        {% for m in "123456789101112" %}
+          <option value="{{ forloop.counter }}" {% if forloop.counter == month %}selected{% endif %}>{{ forloop.counter }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if rows %}
+    <div>
+      <a href="{% url 'printing:nozzle_monthly_print' %}?year={{ year }}&month={{ month }}"
+         target="_blank" class="btn" style="display:inline-block; width:auto; padding:0.6rem 1rem;">
+        چاپ / PDF
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if rows %}
+  <table style="width:100%; border-collapse: collapse; font-size: 0.85rem;">
+    <thead>
+      <tr style="border-bottom: 2px solid var(--color-border); text-align: right;">
+        <th style="padding: 0.4rem;">نازل</th>
+        <th style="padding: 0.4rem;">محصول</th>
+        <th style="padding: 0.4rem;">کنتور ابتدای دوره</th>
+        <th style="padding: 0.4rem;">کنتور انتهای دوره</th>
+        <th style="padding: 0.4rem;">کل عملکرد</th>
+        <th style="padding: 0.4rem;">کل فروش مکانیکی</th>
+        <th style="padding: 0.4rem;">کل مبلغ</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in rows %}
+      <tr style="border-bottom: 1px solid var(--color-border);">
+        <td style="padding: 0.4rem;" class="numeric">{{ row.nozzle.number }}</td>
+        <td style="padding: 0.4rem;">{{ row.nozzle.tank.product.name|persian_product }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.beginning_of_month_meter|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.end_of_month_meter|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_operation|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_mechanical_sales|num }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.total_amount|num }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+    <p style="color: var(--color-ink-muted);">در این ماه اطلاعاتی یافت نشد.</p>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "printing/base_print.html" %}
+{% load display_tags %}
+{% block title %}کارکرد تمام نازل‌ها{% endblock %}
+{% block report_title %}کارکرد تمام نازل‌ها{% endblock %}
+{% block report_period %}{{ tank.product.name|persian_product }} — سال {{ year }} — ماه {{ month }}{% endblock %}
+
+{% block report_body %}
+<table class="print-table print-summary">
+  <thead>
+    <tr>
+      <th>جمع کارکرد</th>
+      <th>مجموع آزمایش</th>
+      <th>مجموع فروش مکانیکی</th>
+      <th>مجموع مبلغ کل</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td class="numeric">{{ totals.total_operation|num }}</td>
+      <td class="numeric">{{ totals.total_test|num }}</td>
+      <td class="numeric">{{ totals.total_mechanical_sales|num }}</td>
+      <td class="numeric">{{ totals.total_amount|num }}</td>
+    </tr>
+  </tbody>
+</table>
+
+<table class="print-table">
+  <thead>
+    <tr>
+      <th>شماره نازل</th>
+      <th>کنتور اول ماه</th>
+      <th>کنتور آخر ماه</th>
+      <th>جمع فروش مکانیکی</th>
+      <th>جمع آزمایش</th>
+      <th>جمع کارکرد</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td class="numeric">{{ row.nozzle_number }}</td>
+      <td class="numeric">{{ row.first_meter|default_if_none:"—"|num }}</td>
+      <td class="numeric">{{ row.last_meter|default_if_none:"—"|num }}</td>
+      <td class="numeric">{{ row.total_mechanical_sales|num }}</td>
+      <td class="numeric">{{ row.total_test|num }}</td>
+      <td class="numeric">{{ row.total_operation|num }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

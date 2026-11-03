@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+{% load jalali_tags %}
+{% load static %}
+{% load display_tags %}
+{% block title %}دفتر موجودی و عملیات — روزانه{% endblock %}
+{% block extra_head %}
+<script src="{% static 'js/jalali.js' %}"></script>
+{% endblock %}
+{% block content %}
+
+<div class="panel">
+  <h2 class="panel__title">دفتر موجودی و عملیات — روزانه</h2>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+    <div>
+      <label class="form-label">انتخاب مخزن</label>
+      <select class="form-input" onchange="window.location = '?tank_id=' + this.value + '&start_date={{ start_date|date:"Y-m-d" }}&end_date={{ end_date|date:"Y-m-d" }}'">
+        <option value="">— انتخاب کنید —</option>
+        {% for tank in tanks %}
+          <option value="{{ tank.id }}" {% if selected_tank.id == tank.id %}selected{% endif %}>
+            {{ tank.product.name|persian_product }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label">از تاریخ</label>
+      <input type="text" inputmode="numeric" class="form-input jalali-date-input" placeholder="۱۴۰۵/۰۱/۰۱"
+             value="{{ start_date|jalali }}"
+             data-nav-template="?tank_id={{ selected_tank.id|default:'' }}&start_date=__ISO__&end_date={{ end_date|date:'Y-m-d' }}">
+    </div>
+    <div>
+      <label class="form-label">تا تاریخ</label>
+      <input type="text" inputmode="numeric" class="form-input jalali-date-input" placeholder="۱۴۰۵/۰۱/۰۱"
+             value="{{ end_date|jalali }}"
+             data-nav-template="?tank_id={{ selected_tank.id|default:'' }}&start_date={{ start_date|date:'Y-m-d' }}&end_date=__ISO__">
+    </div>
+  </div>
+
+  {% if selected_tank %}
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
+      <h3 style="font-size: 0.95rem; margin:0;">{{ selected_tank.product.name|persian_product }}</h3>
+      {% if rows %}
+      <a href="{% url 'printing:petroleum_ledger_print' selected_tank.id %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
+         target="_blank" class="btn" style="display:inline-block; width:auto; padding:0.4rem 0.9rem; font-size:0.85rem;">
+        چاپ / PDF
+      </a>
+      {% endif %}
+    </div>
+
+    {% if rows %}
+    <h3 class="form-label" style="margin: 0 0 0.4rem 0;">مجموع اطلاعات</h3>
+    <div class="dashboard-columns" id="ledger-totals" style="grid-template-columns: repeat(6, 1fr); margin-bottom: 1.25rem;">
+      <div><div class="form-label">مجموع خرید</div><div class="numeric" data-total="purchase" style="font-size:1.2rem;">{{ totals.total_purchase|num }}</div></div>
+      <div><div class="form-label">مجموع سرک</div><div class="numeric" data-total="overage" style="font-size:1.2rem;">{{ totals.total_overage|num }}</div></div>
+      <div><div class="form-label">مجموع آزمایش</div><div class="numeric" data-total="test-received" style="font-size:1.2rem;">{{ totals.total_test_received|num }}</div></div>
+      <div><div class="form-label">مجموع فروش</div><div class="numeric" data-total="sales" style="font-size:1.2rem;">{{ totals.total_sales|num }}</div></div>
+      <div><div class="form-label">مجموع کسری</div><div class="numeric" data-total="shortage" style="font-size:1.2rem;">{{ totals.total_shortage|num }}</div></div>
+      <div><div class="form-label">مجموع آزمایش</div><div class="numeric" data-total="test-dispatched" style="font-size:1.2rem;">{{ totals.total_test_dispatched|num }}</div></div>
+    </div>
+
+    <div style="overflow-x: auto;">
+    <table style="width:100%; border-collapse: collapse; font-size: 0.78rem;">
+      <thead>
+        <tr>
+          <th colspan="8" style="padding: 0.5rem; text-align:center; background: var(--color-surface-alt, #f3f3f3); border-bottom: 2px solid var(--color-border);">رسیده</th>
+          <th colspan="6" style="padding: 0.5rem; text-align:center; background: var(--color-surface-alt, #f3f3f3); border-bottom: 2px solid var(--color-border); border-right: 3px solid var(--color-primary);">خارج شده</th>
+        </tr>
+        <tr style="border-bottom: 2px solid var(--color-border); text-align: right;">
+          <th style="padding: 0.4rem;">تاریخ</th>
+          <th style="padding: 0.4rem;">شماره ی بارنامه</th>
+          <th style="padding: 0.4rem;">شماره ی نفتکش</th>
+          <th style="padding: 0.4rem;">مقدار خرید</th>
+          <th style="padding: 0.4rem;">مجموع آزمایش</th>
+          <th style="padding: 0.4rem;">سرک</th>
+          <th style="padding: 0.4rem;">جمع روزانه‌ی رسیده</th>
+          <th style="padding: 0.4rem;">جمع کل رسیده</th>
+          <th style="padding: 0.4rem; border-right: 3px solid var(--color-primary);">جمع فروش مکانیکی</th>
+          <th style="padding: 0.4rem;">جمع آزمایش</th>
+          <th style="padding: 0.4rem;">کسری</th>
+          <th style="padding: 0.4rem;">جمع روزانه‌ی خارج شده</th>
+          <th style="padding: 0.4rem;">جمع کل خارج شده</th>
+          <th style="padding: 0.4rem;">موجودی واقعی</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          {% for received in row.received_rows %}
+          <tr style="border-bottom: 1px solid var(--color-border);">
+            {% if forloop.first %}
+            <td style="padding: 0.4rem;" class="numeric" rowspan="{{ row.received_rows|length }}">{{ row.date|jalali }}</td>
+            {% endif %}
+            <td style="padding: 0.4rem;">{{ received.program_number|default:"—" }}</td>
+            <td style="padding: 0.4rem;">{{ received.tanker_number|default:"—" }}</td>
+            <td style="padding: 0.4rem;" class="numeric">{{ received.quantity|default:"—"|num }}</td>
+            <td style="padding: 0.4rem;" class="numeric">{{ received.test_return|default_if_none:""|num }}</td>
+            <td style="padding: 0.4rem;" class="numeric">{{ received.overage|default_if_none:""|num }}</td>
+            <td style="padding: 0.4rem;" class="numeric">{{ received.daily_received|default_if_none:""|num }}</td>
+            <td style="padding: 0.4rem;" class="numeric">{{ received.cumulative_received|default_if_none:""|num }}</td>
+            {% if forloop.first %}
+            <td style="padding: 0.4rem; border-right: 3px solid var(--color-primary);" class="numeric" rowspan="{{ row.received_rows|length }}">{{ row.daily_sales|num }}</td>
+            <td style="padding: 0.4rem;" class="numeric" rowspan="{{ row.received_rows|length }}">{{ row.test_return|num }}</td>
+            <td style="padding: 0.4rem;" class="numeric" rowspan="{{ row.received_rows|length }}">{{ row.shortage|default:"—"|num }}</td>
+            <td style="padding: 0.4rem;" class="numeric" rowspan="{{ row.received_rows|length }}">{{ row.daily_dispatched|default:"—"|num }}</td>
+            <td style="padding: 0.4rem;" class="numeric" rowspan="{{ row.received_rows|length }}">{{ row.cumulative_dispatched|default:"—"|num }}</td>
+            <td style="padding: 0.4rem;" class="numeric" rowspan="{{ row.received_rows|length }}">{{ row.actual_inventory|default:"—"|num }}</td>
+            {% endif %}
+          </tr>
+          {% endfor %}
+        {% endfor %}
+      </tbody>
+    </table>
+    </div>
+    {% else %}
+      <p style="color: var(--color-ink-muted);">در بازه انتخاب‌شده اطلاعاتی یافت نشد.</p>
+    {% endif %}
+  {% else %}
+    <p style="color: var(--color-ink-muted);">برای مشاهده گزارش، مخزنی را انتخاب کنید.</p>
+  {% endif %}
+</div>
+<script>document.addEventListener('DOMContentLoaded', function () { JalaliCalendar.bindNavInputs(); });</script>
+{% endblock %}
