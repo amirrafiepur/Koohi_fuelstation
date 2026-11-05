@@ -1,6 +1,6 @@
 $ErrorActionPreference = "Stop"
 
-Write-Host "=== 140 Jahan Pour Windows build ===" -ForegroundColor Cyan
+Write-Host "=== Koohi 118 Windows build ===" -ForegroundColor Cyan
 
 if (-not (Get-Command py -ErrorAction SilentlyContinue)) {
     throw "Python Launcher (py.exe) was not found."

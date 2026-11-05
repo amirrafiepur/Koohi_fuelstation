@@ -30,7 +30,7 @@ from pathlib import Path
 
 HOST = "127.0.0.1"
 DEFAULT_PORT = 8765
-WINDOW_TITLE = "سامانه حسابداری جایگاه ۱۴۰ جهانی پور"
+WINDOW_TITLE = "سامانه حسابداری جایگاه کوهی ۱۱۸"
 
 
 def _project_root() -> Path:
@@ -476,7 +476,7 @@ def _run_gui(port: int) -> int:
 
     app = QApplication(sys.argv)
     app.setApplicationName(WINDOW_TITLE)
-    app.setOrganizationName("140 Jahan Pour")
+    app.setOrganizationName("Koohi 118")
 
     window = MainWindow()
     window.setWindowTitle(WINDOW_TITLE)

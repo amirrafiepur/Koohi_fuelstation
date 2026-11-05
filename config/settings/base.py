@@ -1,5 +1,5 @@
 """
-Base Django settings for the Fuel Station Management App (140 Jahan Pour).
+Base Django settings for the Fuel Station Management App (Koohi 118).
 
 This file holds settings shared across all run modes. `desktop.py` extends
 this for the packaged PySide6 desktop runtime.

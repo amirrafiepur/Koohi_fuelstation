@@ -16,7 +16,7 @@ class DashboardSmokeTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="op1", password="testpass123")
         License.objects.create(start_date=datetime.date.today(), duration_days=365)
-        station = Station.objects.create(name="140 Jahan Pour", province="Razavi Khorasan", city="Mashhad")
+        station = Station.objects.create(name="Koohi 118", province="Razavi Khorasan", city="Mashhad")
         regular = Product.objects.create(name="Regular")
         super_ = Product.objects.create(name="Super")
         self.regular_tank = Tank.objects.create(station=station, product=regular, capacity=50000)
@@ -227,7 +227,7 @@ class StationDisplayTests(TestCase):
         self.user = User.objects.create_user(username="op_disp", password="testpass123")
         License.objects.create(start_date=datetime.date(2026, 8, 1), duration_days=365)
         self.station = Station.objects.create(
-            name="140 Jahan Pour", province="Razavi Khorasan", city="Mashhad",
+            name="Koohi 118", province="Razavi Khorasan", city="Mashhad",
         )
         regular = Product.objects.create(name="Regular")
         Tank.objects.create(station=self.station, product=regular, capacity=50000)
@@ -239,16 +239,17 @@ class StationDisplayTests(TestCase):
         self.assertIn("بنزین معمولی", content)
         self.assertNotIn(">Regular<", content)
 
-    def test_dashboard_station_header_uses_correct_spelling(self):
+    def test_dashboard_station_header_shows_koohi_118(self):
         resp = self.client.get("/")
         content = resp.content.decode()
-        self.assertIn("جهانی\u200cپور", content)
-        self.assertNotIn("جهانی پور", content)  # plain space, the old typo'd rendering
-        self.assertNotIn("جهان\u200cپور", content)  # missing "ی"
+        self.assertIn("کوهی ۱۱۸", content)
+        self.assertIn("خراسان رضوی، مشهد", content)
+        self.assertNotIn("جهانی", content)
+        self.assertNotIn("۱۴۰", content)
 
     def test_stored_db_values_unchanged(self):
         self.station.refresh_from_db()
-        self.assertEqual(self.station.name, "140 Jahan Pour")
+        self.assertEqual(self.station.name, "Koohi 118")
         self.assertEqual(self.station.province, "Razavi Khorasan")
         self.assertEqual(self.station.city, "Mashhad")
 
@@ -256,9 +257,40 @@ class StationDisplayTests(TestCase):
         from apps.printing.services import get_station_metadata
 
         meta = get_station_metadata()
-        self.assertEqual(meta["name"], "جایگاه جهانی\u200cپور ۱۴۰")
+        self.assertEqual(meta["name"], "جایگاه کوهی ۱۱۸")
         self.assertEqual(meta["province"], "خراسان رضوی")
         self.assertEqual(meta["city"], "مشهد")
+
+    def test_get_station_metadata_maps_legacy_station_name_to_new_identity(self):
+        from apps.printing.services import get_station_metadata
+
+        self.station.name = "140 Jahan Pour"
+        self.station.save()
+
+        meta = get_station_metadata()
+        self.assertEqual(meta["name"], "جایگاه کوهی ۱۱۸")
+        self.assertEqual(meta["province"], "خراسان رضوی")
+        self.assertEqual(meta["city"], "مشهد")
+
+    def test_seed_station_relabels_legacy_station_without_duplicating(self):
+        import io
+        from django.core.management import call_command
+
+        self.station.name = "140 Jahan Pour"
+        self.station.save()
+        tanks_before = Tank.objects.count()
+
+        call_command("seed_station", stdout=io.StringIO())
+
+        self.assertEqual(Station.objects.count(), 1)
+        station = Station.objects.get()
+        self.assertEqual(station.pk, self.station.pk)
+        self.assertEqual(station.name, "Koohi 118")
+        self.assertEqual(station.province, "Razavi Khorasan")
+        self.assertEqual(station.city, "Mashhad")
+        # The existing Regular tank is reused, not duplicated.
+        self.assertEqual(Tank.objects.filter(station=station, product__name="Regular").count(), 1)
+        self.assertGreaterEqual(Tank.objects.count(), tanks_before)
 
     def test_get_station_metadata_falls_back_for_unknown_station(self):
         from apps.printing.services import get_station_metadata
@@ -285,9 +317,9 @@ class StationDisplayTests(TestCase):
             "{% block report_body %}{% endblock %}"
         )
         html = template.render({
-            "station": {"name": "جایگاه جهانی\u200cپور ۱۴۰", "province": "خراسان رضوی", "city": "مشهد"},
+            "station": {"name": "جایگاه کوهی ۱۱۸", "province": "خراسان رضوی", "city": "مشهد"},
         })
-        self.assertIn("جایگاه جهانی\u200cپور ۱۴۰", html)
+        self.assertIn("جایگاه کوهی ۱۱۸", html)
         self.assertIn("مشهد، خراسان رضوی", html)
 
 

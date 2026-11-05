@@ -1,11 +1,11 @@
-; 140 Jahan Pour - Inno Setup installer
+; Koohi 118 - Inno Setup installer
 ; Phase 13 packaging. The accounting database is stored under
 ; %LOCALAPPDATA%\140JahanPour by the desktop runtime and is deliberately
 ; NOT removed by the uninstaller.
 
-#define MyAppName "140 Jahan Pour"
+#define MyAppName "Koohi 118"
 #define MyAppVersion "1.0.0"
-#define MyAppPublisher "140 Jahan Pour"
+#define MyAppPublisher "Koohi 118"
 #define MyAppExeName "FuelStation.exe"
 
 [Setup]
@@ -16,7 +16,7 @@ AppPublisher={#MyAppPublisher}
 DefaultDirName={localappdata}\Programs\140JahanPour
 DefaultGroupName={#MyAppName}
 OutputDir=installer
-OutputBaseFilename=140JahanPour-Setup
+OutputBaseFilename=Koohi118-Setup
 Compression=lzma
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64

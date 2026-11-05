@@ -57,7 +57,7 @@ class PrintingHttpTests(TestCase):
         self.user = User.objects.create_user(username="op1", password="testpass123")
         License.objects.create(start_date=datetime.date(2026, 8, 1), duration_days=365)
         self.station = Station.objects.create(
-            name="140 Jahan Pour", province="Razavi Khorasan", city="Mashhad"
+            name="Koohi 118", province="Razavi Khorasan", city="Mashhad"
         )
         self.product = Product.objects.create(name="Regular")
         self.tank = Tank.objects.create(station=self.station, product=self.product, capacity=50000)
@@ -135,8 +135,8 @@ class PrintingHttpTests(TestCase):
         html = render_to_string("printing/nozzle_ledger_print.html", context)
         # Persian display labels (see apps/printing/services.py's
         # _STATION_PERSIAN_DISPLAY) -- the stored Station row is still
-        # "140 Jahan Pour" / "Razavi Khorasan" / "Mashhad".
-        self.assertIn("جایگاه جهانی\u200cپور ۱۴۰", html)
+        # "Koohi 118" / "Razavi Khorasan" / "Mashhad".
+        self.assertIn("جایگاه کوهی ۱۱۸", html)
         self.assertIn("خراسان رضوی", html)
         self.assertIn("مشهد", html)
 
@@ -159,8 +159,8 @@ class PrintingHttpTests(TestCase):
         html = render_to_string("printing/petroleum_monthly_print.html", context)
         # Persian display labels (see apps/printing/services.py's
         # _STATION_PERSIAN_DISPLAY) -- the stored Station row is still
-        # "140 Jahan Pour" / "Razavi Khorasan" / "Mashhad".
-        self.assertIn("جایگاه جهانی\u200cپور ۱۴۰", html)
+        # "Koohi 118" / "Razavi Khorasan" / "Mashhad".
+        self.assertIn("جایگاه کوهی ۱۱۸", html)
         self.assertIn("خراسان رضوی", html)
         self.assertIn("مشهد", html)
 

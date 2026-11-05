@@ -15,18 +15,24 @@ from apps.stations.models import Station
 
 #: Presentation-only mapping for the single seeded Station row (see
 #: apps/stations/management/commands/seed_station.py), which still stores
-#: its original English identity ("140 Jahan Pour" / "Razavi Khorasan" /
-#: "Mashhad") -- per this project's Persianization task, the stored
-#: values are deliberately left unchanged; only what gets printed is
-#: translated. A station whose raw name doesn't match this known seed
-#: value falls back to its raw DB fields unchanged below, so this never
-#: breaks if the station row is ever renamed to something else.
+#: its English identity ("Koohi 118" / "Razavi Khorasan" / "Mashhad") --
+#: the stored values are deliberately left unchanged; only what gets
+#: printed is translated. The previous station's seed name is mapped to
+#: the SAME new identity so a database created before the identity change
+#: (and not yet renamed by seed_station) can never print the old name.
+#: A station whose raw name doesn't match a known seed value falls back
+#: to its raw DB fields unchanged below, so this never breaks if the
+#: station row is ever renamed to something else.
+_KOOHI_118_DISPLAY = {
+    "name": "جایگاه کوهی ۱۱۸",
+    "province": "خراسان رضوی",
+    "city": "مشهد",
+}
+
 _STATION_PERSIAN_DISPLAY = {
-    "140 Jahan Pour": {
-        "name": "جایگاه جهانی‌پور ۱۴۰",
-        "province": "خراسان رضوی",
-        "city": "مشهد",
-    },
+    "Koohi 118": _KOOHI_118_DISPLAY,
+    # Legacy seed name of the previous station (see seed_station.py).
+    "140 Jahan Pour": _KOOHI_118_DISPLAY,
 }
 
 

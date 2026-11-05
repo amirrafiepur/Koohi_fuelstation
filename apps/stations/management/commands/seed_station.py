@@ -17,6 +17,9 @@ from apps.stations.models import Station, Product, Tank, Nozzle
 
 REGULAR_NOZZLES = list(range(1, 19)) + [25, 26]
 SUPER_NOZZLES = list(range(19, 25))
+STATION_NAME = "Koohi 118"
+# Name stored by databases created for the previous station.
+LEGACY_STATION_NAME = "140 Jahan Pour"
 
 
 class Command(BaseCommand):
@@ -24,10 +27,24 @@ class Command(BaseCommand):
 
     @transaction.atomic
     def handle(self, *args, **options):
-        station, created = Station.objects.get_or_create(
-            name="140 Jahan Pour",
-            defaults={"province": "Razavi Khorasan", "city": "Mashhad"},
-        )
+        station = Station.objects.filter(name=STATION_NAME).first()
+        created = False
+        if station is None:
+            # A database created before the identity change holds the
+            # previous station's single Station row. Re-label THAT row
+            # instead of creating a second Station beside it: tanks and
+            # everything hanging off them must stay attached to one
+            # station. Only the name changes; province/city and every
+            # accounting record are untouched.
+            station = Station.objects.filter(name=LEGACY_STATION_NAME).first()
+            if station is not None:
+                station.name = STATION_NAME
+                station.save(update_fields=["name"])
+            else:
+                station = Station.objects.create(
+                    name=STATION_NAME, province="Razavi Khorasan", city="Mashhad"
+                )
+                created = True
         self.stdout.write(
             self.style.SUCCESS(f"Station: {station} ({'created' if created else 'already existed'})")
         )

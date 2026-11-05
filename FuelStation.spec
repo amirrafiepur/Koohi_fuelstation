@@ -1,6 +1,6 @@
 # -*- mode: python ; coding: utf-8 -*-
 """
-PyInstaller spec -- 140 Jahan Pour Fuel Station Management System.
+PyInstaller spec -- Koohi 118 Fuel Station Management System.
 
 Windows x86-64, Python 3.11, PyInstaller 6.22.2, onedir + windowed.
 Output: dist\\FuelStation\\FuelStation.exe  (what build_windows.ps1 and

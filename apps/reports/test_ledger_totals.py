@@ -71,7 +71,7 @@ class LedgerTotalsTests(TestCase):
     def setUp(self):
         self.user = User.objects.create_user(username="op1", password="testpass123")
         License.objects.create(start_date=datetime.date(2026, 8, 1), duration_days=365)
-        station = Station.objects.create(name="140 Jahan Pour", province="Razavi Khorasan", city="Mashhad")
+        station = Station.objects.create(name="Koohi 118", province="Razavi Khorasan", city="Mashhad")
         regular = Product.objects.create(name="Regular")
         sup = Product.objects.create(name="Super")
         self.tank = Tank.objects.create(station=station, product=regular, capacity=50000)
