@@ -35,10 +35,10 @@ def build_statement_rows(year: int, month: int):
     """
     One row per tank/product for the selected Jalali year/month. Always
     one row per existing tank (never skipped for having no data that
-    month), so both "بنزین معمولی" and "بنزین سوپر" always appear.
+    month), so both "بنزین معمولی" and "CNG" always appear.
     """
     first_day, last_day = jalali_month_bounds(year, month)
-    tanks = Tank.objects.select_related("product").order_by("product__name")
+    tanks = Tank.objects.select_related("product")
 
     rows = []
     for tank in tanks:

@@ -2,9 +2,9 @@
 "لیست اطلاعات فروش": the monthly, nozzle-based report, one FUEL TYPE at a time
 (screen + PDF + keyboard).
 
-  Regular (بنزین معمولی): nozzles 1-18, 25, 26  (20 rows)
-  Super   (بنزین سوپر)  : nozzles 19-24         (6 rows)
-Regular and Super nozzles are never mixed; the summary strip, the table and the
+  Regular (بنزین معمولی): nozzles 1-14        (14 rows)
+  CNG   (CNG)  : nozzles CNG 1-4        (4 rows)
+Regular and CNG nozzles are never mixed; the summary strip, the table and the
 PDF all follow the selected fuel. The nozzle sets come from the seeded station
 (seed_station), i.e. from the data model.
 
@@ -16,12 +16,12 @@ JALALI 1405/05 (2026-07-23 .. 2026-08-22):
   nozzle 1  (Regular): d1 0->1000 test10 @1200 | d2 1000->2500 test5 @1300
               operation 2,500  test 15  sales 2,485  amount 1,188,000+1,943,500 = 3,131,500
   nozzle 2  (Regular): d1 500->900 test0 @1200      -> 400 | 0 | 400 | 480,000
-  nozzle 26 (Regular): d2 100->160 test4 @1500      -> 60 | 4 | 56 | 84,000
-  nozzle 19 (Super)  : d1 0->300 test2 @1500 | d3 300->450 test0 @1600
+  nozzle 14 (Regular): d2 100->160 test4 @1500      -> 60 | 4 | 56 | 84,000
+  nozzle CNG 1 (CNG):  d1 0->300 test2 @1500 | d3 300->450 test0 @1600
               operation 450  test 2  sales 448  amount 447,000+240,000 = 687,000
   REGULAR TOTALS: operation 2,960 | test 19 | sales 2,941 | amount 3,695,500
-  SUPER   TOTALS: operation   450 | test  2 | sales   448 | amount   687,000
-  (together: 3,410 | 21 | 3,389 | 4,382,500 -- the old all-26-nozzle totals)
+  CNG     TOTALS: operation   450 | test  2 | sales   448 | amount   687,000
+  (together: 3,410 | 21 | 3,389 | 4,382,500 -- both fuels together)
 JALALI 1405/06 (must never leak into 05): nozzle 1 2500->2800 test1 @1300 -> 300 | 1 | 299 | 388,700
 """
 
@@ -51,19 +51,20 @@ User = get_user_model()
 HARNESS = Path(__file__).parent / "js_tests" / "all_nozzles_keyboard.js"
 D = Decimal
 
-REGULAR_NUMBERS = list(range(1, 19)) + [25, 26]
-SUPER_NUMBERS = list(range(19, 25))
-NUMBERS = {"Regular": REGULAR_NUMBERS, "Super": SUPER_NUMBERS}
-LABEL = {"Regular": "بنزین معمولی", "Super": "بنزین سوپر"}
+# A nozzle is identified by Nozzle.identifier: "1".."14" for regular petrol, "CNG 1".."CNG 4" for CNG.
+REGULAR_NUMBERS = [str(n) for n in range(1, 15)]
+CNG_NUMBERS = [f"CNG {n}" for n in range(1, 5)]
+NUMBERS = {"Regular": REGULAR_NUMBERS, "CNG": CNG_NUMBERS}
+LABEL = {"Regular": "بنزین معمولی", "CNG": "CNG"}
 
 # nozzle -> (operation, test, mechanical sales, amount)
-DATA_05 = {1: (2500, 15, 2485, 3131500), 2: (400, 0, 400, 480000), 26: (60, 4, 56, 84000), 19: (450, 2, 448, 687000)}
-DATA_06 = {1: (300, 1, 299, 388700)}
-FIRST_LAST_05 = {1: (0, 2500), 2: (500, 900), 26: (100, 160), 19: (0, 450)}      # (first previous, last new)
-FIRST_LAST_06 = {1: (2500, 2800)}
-TOTALS_05 = {"Regular": (2960, 19, 2941, 3695500), "Super": (450, 2, 448, 687000)}
-TOTALS_06 = {"Regular": (300, 1, 299, 388700), "Super": (0, 0, 0, 0)}
-OLD_ALL_26_TOTALS_05 = (3410, 21, 3389, 4382500)
+DATA_05 = {"1": (2500, 15, 2485, 3131500), "2": (400, 0, 400, 480000), "14": (60, 4, 56, 84000), "CNG 1": (450, 2, 448, 687000)}
+DATA_06 = {"1": (300, 1, 299, 388700)}
+FIRST_LAST_05 = {"1": (0, 2500), "2": (500, 900), "14": (100, 160), "CNG 1": (0, 450)}      # (first previous, last new)
+FIRST_LAST_06 = {"1": (2500, 2800)}
+TOTALS_05 = {"Regular": (2960, 19, 2941, 3695500), "CNG": (450, 2, 448, 687000)}
+TOTALS_06 = {"Regular": (300, 1, 299, 388700), "CNG": (0, 0, 0, 0)}
+BOTH_FUELS_TOTALS_05 = (3410, 21, 3389, 4382500)
 
 FIELDS = ("total_operation", "total_test", "total_mechanical_sales", "total_amount")
 TOTAL_KEYS = ("operation", "test", "mechanical-sales", "amount")
@@ -110,27 +111,29 @@ def pdf_table_rows(html):
 
 
 class AllNozzlesBase(TestCase):
-    def add_sale(self, day, number, prev, new, test=0, rate=1200):
+    def add_sale(self, day, ident, prev, new, test=0, rate=1200):
+        """`ident` is the nozzle's identifier: "5" (regular) or "CNG 1"."""
+        fuel, number = ("CNG", int(ident.split()[1])) if ident.startswith("CNG ") else ("Regular", int(ident))
         wd, _ = DailyWorkingDay.objects.get_or_create(date=day)
         inv, _ = SalesInvoice.objects.get_or_create(working_day=wd, defaults={"operator": self.user})
-        return NozzleSale.objects.create(sales_invoice=inv, nozzle=Nozzle.objects.get(number=number),
+        return NozzleSale.objects.create(sales_invoice=inv, nozzle=Nozzle.objects.get(tank__product__name=fuel, number=number),
                                          previous_meter=D(prev), new_meter=D(new), test=D(test), sales_rate=D(rate))
 
     def setUp(self):
         self.user = User.objects.create_user(username="op1", password="testpass123")
         License.objects.create(start_date=datetime.date(2026, 7, 23), duration_days=365)
-        call_command("seed_station", stdout=io.StringIO())             # the real station: 2 tanks, 26 nozzles
+        call_command("seed_station", stdout=io.StringIO())             # the real station: 2 tanks, 18 nozzles
         self.tank = {"Regular": Tank.objects.get(product__name="Regular"),
-                     "Super": Tank.objects.get(product__name="Super")}
+                     "CNG": Tank.objects.get(product__name="CNG")}
         self.client.login(username="op1", password="testpass123")
         day = datetime.date
-        self.add_sale(day(2026, 7, 24), 1, 0, 1000, 10, 1200)
-        self.add_sale(day(2026, 7, 26), 1, 1000, 2500, 5, 1300)
-        self.add_sale(day(2026, 7, 24), 2, 500, 900, 0, 1200)
-        self.add_sale(day(2026, 7, 24), 19, 0, 300, 2, 1500)
-        self.add_sale(day(2026, 8, 2), 19, 300, 450, 0, 1600)
-        self.add_sale(day(2026, 7, 26), 26, 100, 160, 4, 1500)
-        self.add_sale(day(2026, 8, 25), 1, 2500, 2800, 1, 1300)      # month 06 -- must not leak into 05
+        self.add_sale(day(2026, 7, 24), "1", 0, 1000, 10, 1200)
+        self.add_sale(day(2026, 7, 26), "1", 1000, 2500, 5, 1300)
+        self.add_sale(day(2026, 7, 24), "2", 500, 900, 0, 1200)
+        self.add_sale(day(2026, 7, 24), "CNG 1", 0, 300, 2, 1500)
+        self.add_sale(day(2026, 8, 2), "CNG 1", 300, 450, 0, 1600)
+        self.add_sale(day(2026, 7, 26), "14", 100, 160, 4, 1500)
+        self.add_sale(day(2026, 8, 25), "1", 2500, 2800, 1, 1300)      # month 06 -- must not leak into 05
 
     def tid(self, fuel):
         return self.tank[fuel].id
@@ -149,10 +152,10 @@ class AllNozzlesBase(TestCase):
 
 class SeedSanityTests(AllNozzlesBase):
     def test_the_seeded_station_has_the_expected_nozzle_sets(self):
-        for fuel in ("Regular", "Super"):
-            self.assertEqual(sorted(Nozzle.objects.filter(tank=self.tank[fuel]).values_list("number", flat=True)),
+        for fuel in ("Regular", "CNG"):
+            self.assertEqual([n.identifier for n in Nozzle.objects.filter(tank=self.tank[fuel]).order_by("number")],
                              NUMBERS[fuel])
-        self.assertEqual((len(REGULAR_NUMBERS), len(SUPER_NUMBERS)), (20, 6))
+        self.assertEqual((len(REGULAR_NUMBERS), len(CNG_NUMBERS)), (14, 4))
 
 
 class ServiceTests(AllNozzlesBase):
@@ -160,29 +163,31 @@ class ServiceTests(AllNozzlesBase):
         return report_services.all_nozzles_monthly_summary(1405, month, self.tank[fuel])
 
     def test_each_fuel_lists_exactly_its_own_nozzles_in_order(self):
-        for fuel in ("Regular", "Super"):
-            self.assertEqual([r["nozzle_number"] for r in self.rows(5, fuel)], NUMBERS[fuel], fuel)
+        for fuel in ("Regular", "CNG"):
+            self.assertEqual([r["nozzle_identifier"] for r in self.rows(5, fuel)], NUMBERS[fuel], fuel)
 
-    def test_regular_and_super_are_never_mixed(self):
-        regular = {r["nozzle_number"] for r in self.rows(5, "Regular")}
-        sup = {r["nozzle_number"] for r in self.rows(5, "Super")}
+    def test_regular_and_cng_are_never_mixed(self):
+        regular = {r["nozzle_identifier"] for r in self.rows(5, "Regular")}
+        sup = {r["nozzle_identifier"] for r in self.rows(5, "CNG")}
         self.assertEqual(regular & sup, set())
-        self.assertEqual(regular | sup, set(range(1, 27)))
-        self.assertTrue(sup.isdisjoint({1, 2, 18, 25, 26}) and regular.isdisjoint(range(19, 25)))
+        self.assertEqual(regular, set(REGULAR_NUMBERS))
+        self.assertEqual(sup, set(CNG_NUMBERS))
+        # CNG nozzles are never regular nozzles 15-18.
+        self.assertTrue(all(n.startswith("CNG ") for n in sup) and not any(n.startswith("CNG") for n in regular))
 
     def test_each_row_equals_the_hand_worked_monthly_figures(self):
         for month, data, first_last in ((5, DATA_05, FIRST_LAST_05), (6, DATA_06, FIRST_LAST_06)):
-            for fuel in ("Regular", "Super"):
+            for fuel in ("Regular", "CNG"):
                 for r in self.rows(month, fuel):
-                    op, test, sales, amount = data.get(r["nozzle_number"], (0, 0, 0, 0))
-                    self.assertEqual(tuple(r[f] for f in FIELDS), (D(op), D(test), D(sales), D(amount)), (month, fuel, r["nozzle_number"]))
-                    first, last = first_last.get(r["nozzle_number"], (None, None))
+                    op, test, sales, amount = data.get(r["nozzle_identifier"], (0, 0, 0, 0))
+                    self.assertEqual(tuple(r[f] for f in FIELDS), (D(op), D(test), D(sales), D(amount)), (month, fuel, r["nozzle_identifier"]))
+                    first, last = first_last.get(r["nozzle_identifier"], (None, None))
                     self.assertEqual(r["first_meter"], None if first is None else D(first))
                     self.assertEqual(r["last_meter"], None if last is None else D(last))
 
     def test_summary_totals_per_fuel_equal_hand_sums_and_column_sums(self):
         for month, expected in ((5, TOTALS_05), (6, TOTALS_06)):
-            for fuel in ("Regular", "Super"):
+            for fuel in ("Regular", "CNG"):
                 rows = self.rows(month, fuel)
                 totals = report_services.all_nozzles_monthly_totals(rows)
                 self.assertEqual(tuple(totals[f] for f in FIELDS), tuple(D(x) for x in expected[fuel]), (month, fuel))
@@ -190,18 +195,18 @@ class ServiceTests(AllNozzlesBase):
                     self.assertEqual(totals[f], sum(r[f] for r in rows))
 
     def test_the_two_fuels_add_up_to_the_old_all_nozzle_totals(self):
-        both = [report_services.all_nozzles_monthly_totals(self.rows(5, f)) for f in ("Regular", "Super")]
-        self.assertEqual(tuple(sum(t[f] for t in both) for f in FIELDS), tuple(D(x) for x in OLD_ALL_26_TOTALS_05))
+        both = [report_services.all_nozzles_monthly_totals(self.rows(5, f)) for f in ("Regular", "CNG")]
+        self.assertEqual(tuple(sum(t[f] for t in both) for f in FIELDS), tuple(D(x) for x in BOTH_FUELS_TOTALS_05))
 
     def test_other_months_never_leak_in(self):
-        regular_06 = {r["nozzle_number"]: r for r in self.rows(6, "Regular")}
-        self.assertEqual(regular_06[1]["total_operation"], D(300))
-        self.assertEqual(regular_06[26]["total_operation"], D(0))
-        self.assertEqual(report_services.all_nozzles_monthly_totals(self.rows(9, "Super"))["total_amount"], D(0))
+        regular_06 = {r["nozzle_identifier"]: r for r in self.rows(6, "Regular")}
+        self.assertEqual(regular_06["1"]["total_operation"], D(300))
+        self.assertEqual(regular_06["14"]["total_operation"], D(0))
+        self.assertEqual(report_services.all_nozzles_monthly_totals(self.rows(9, "CNG"))["total_amount"], D(0))
 
     def test_a_month_with_no_sales_still_lists_the_fuels_nozzles(self):
-        self.assertEqual(len(self.rows(9, "Regular")), 20)
-        self.assertEqual(len(self.rows(9, "Super")), 6)
+        self.assertEqual(len(self.rows(9, "Regular")), 14)
+        self.assertEqual(len(self.rows(9, "CNG")), 4)
 
 
 class SelectorAndScreenTests(AllNozzlesBase):
@@ -211,32 +216,32 @@ class SelectorAndScreenTests(AllNozzlesBase):
         self.assertRegex(html, rf'<option value="{self.tid("Regular")}" selected>')
 
     def test_fuel_selector_offers_both_fuels_and_shows_the_selected_one(self):
-        for fuel in ("Regular", "Super"):
+        for fuel in ("Regular", "CNG"):
             html = self.page(5, fuel)
             select = html.split('id="fuel-select"', 1)[1].split("</select>", 1)[0]
             options = re.findall(r'<option value="(\d+)"([^>]*)>([^<]*)</option>', select)
             self.assertEqual([(o[0], o[2]) for o in options],
-                             [(str(self.tid("Regular")), "بنزین معمولی"), (str(self.tid("Super")), "بنزین سوپر")])
+                             [(str(self.tid("Regular")), "بنزین معمولی"), (str(self.tid("CNG")), "CNG")])
             selected = [o for o in options if "selected" in o[1]]
             self.assertEqual([s[2] for s in selected], [LABEL[fuel]])
             self.assertIn("نوع سوخت", html)
 
     def test_each_fuel_shows_only_its_nozzles_and_never_the_other_fuels(self):
-        for fuel, other in (("Regular", "Super"), ("Super", "Regular")):
+        for fuel, other in (("Regular", "CNG"), ("CNG", "Regular")):
             rows = table_rows(self.page(5, fuel))
-            numbers = [int(r[0]) for r in rows]
+            numbers = [r[0] for r in rows]
             self.assertEqual(numbers, NUMBERS[fuel])
             self.assertEqual(len(rows), len(NUMBERS[fuel]))
             self.assertTrue(set(numbers).isdisjoint(NUMBERS[other]))
-            self.assertLess(len(rows), 26)                                   # the all-26 view no longer exists
+            self.assertLess(len(rows), 18)                                   # never both fuels in one table
 
     def test_rows_carry_the_hand_worked_values(self):
-        for fuel in ("Regular", "Super"):
+        for fuel in ("Regular", "CNG"):
             for r in table_rows(self.page(5, fuel)):
-                self.assertEqual(r, expected_row(int(r[0]), DATA_05, FIRST_LAST_05), (fuel, r[0]))
+                self.assertEqual(r, expected_row(r[0], DATA_05, FIRST_LAST_05), (fuel, r[0]))
 
     def test_header_labels_and_summary_labels_are_unchanged(self):
-        html = self.page(5, "Super")
+        html = self.page(5, "CNG")
         head = html.split('id="all-nozzles-table"', 1)[1].split("</thead>", 1)[0]
         self.assertEqual(re.findall(r"<th[^>]*>([^<]*)</th>", head),
                          ["شماره نازل", "کنتور اول ماه", "کنتور آخر ماه", "جمع فروش مکانیکی", "جمع آزمایش", "جمع کارکرد"])
@@ -246,11 +251,11 @@ class SelectorAndScreenTests(AllNozzlesBase):
 
     def test_summary_follows_the_selected_fuel(self):
         for month, expected in ((5, TOTALS_05), (6, TOTALS_06)):
-            for fuel in ("Regular", "Super"):
+            for fuel in ("Regular", "CNG"):
                 self.assertEqual(screen_totals(self.page(month, fuel)), tuple(fmt(x) for x in expected[fuel]), (month, fuel))
 
     def test_summary_equals_the_sums_of_the_displayed_rows(self):
-        for fuel in ("Regular", "Super"):
+        for fuel in ("Regular", "CNG"):
             html = self.page(5, fuel)
             rows = table_rows(html)
             shown = tuple(to_int(x) for x in screen_totals(html))
@@ -259,14 +264,14 @@ class SelectorAndScreenTests(AllNozzlesBase):
             self.assertEqual(shown[3], TOTALS_05[fuel][3])
 
     def test_summary_sits_above_the_table(self):
-        html = self.page(5, "Super")
+        html = self.page(5, "CNG")
         self.assertLess(html.index('id="all-nozzles-totals"'), html.index('id="all-nozzles-table"'))
 
     def test_month_and_year_changes_keep_the_selected_fuel(self):
-        html = self.page(6, "Super")
+        html = self.page(6, "CNG")
         self.assertEqual(screen_totals(html), ("0", "0", "0", "0"))
-        self.assertEqual(len(table_rows(html)), 6)
-        tid = self.tid("Super")
+        self.assertEqual(len(table_rows(html)), 4)
+        tid = self.tid("CNG")
         self.assertIn(f"&month=' + this.value + '&tank_id={tid}'", html)                 # month selector
         self.assertIn(f"this.value + '&month=6&tank_id={tid}'", html)                    # year input
         self.assertIn(f"/print/all-nozzles/?year=1405&month=6&tank_id={tid}", html)      # print link
@@ -275,13 +280,13 @@ class SelectorAndScreenTests(AllNozzlesBase):
     def test_unknown_tank_is_a_404_and_other_pages_unaffected(self):
         self.assertEqual(self.client.get("/reports/all-nozzles/?year=1405&month=5&tank_id=99999").status_code, 404)
         self.assertEqual(self.client.get("/print/all-nozzles/?year=1405&month=5&tank_id=99999").status_code, 404)
-        nozzle = Nozzle.objects.get(number=1)
+        nozzle = Nozzle.objects.get(tank__product__name="Regular", number=1)
         resp = self.client.get(f"/reports/nozzle-ledger/?nozzle_id={nozzle.id}&start_date=2026-07-23&end_date=2026-08-22")
         self.assertEqual(resp.status_code, 200)
 
     def test_viewing_changes_no_stored_data(self):
         before = list(NozzleSale.objects.values_list("id", "previous_meter", "new_meter", "test", "sales_rate").order_by("id"))
-        for fuel in ("Regular", "Super"):
+        for fuel in ("Regular", "CNG"):
             self.page(5, fuel)
             self.client.get(self.print_url(5, fuel))
         self.assertEqual(before, list(NozzleSale.objects.values_list(
@@ -291,7 +296,7 @@ class SelectorAndScreenTests(AllNozzlesBase):
 class PdfTests(AllNozzlesBase):
     def test_pdf_rows_and_summary_match_the_screen_for_both_fuels(self):
         for month in (5, 6, 9):
-            for fuel in ("Regular", "Super"):
+            for fuel in ("Regular", "CNG"):
                 screen = self.page(month, fuel)
                 resp, html = render_pdf_with_html(self.client, self.print_url(month, fuel))
                 self.assertEqual(resp.status_code, 200)
@@ -300,22 +305,22 @@ class PdfTests(AllNozzlesBase):
                 self.assertEqual(pdf_summary(html), screen_totals(screen), (month, fuel))
 
     def test_pdf_contains_only_the_selected_fuels_nozzles(self):
-        for fuel in ("Regular", "Super"):
+        for fuel in ("Regular", "CNG"):
             _, html = render_pdf_with_html(self.client, self.print_url(5, fuel))
-            self.assertEqual([int(r[0]) for r in pdf_table_rows(html)], NUMBERS[fuel])
+            self.assertEqual([r[0] for r in pdf_table_rows(html)], NUMBERS[fuel])
 
     def test_pdf_values_and_totals_are_the_hand_worked_ones(self):
-        for fuel in ("Regular", "Super"):
+        for fuel in ("Regular", "CNG"):
             _, html = render_pdf_with_html(self.client, self.print_url(5, fuel))
             self.assertEqual(pdf_summary(html), tuple(fmt(x) for x in TOTALS_05[fuel]))
             for r in pdf_table_rows(html):
-                self.assertEqual(r, expected_row(int(r[0]), DATA_05, FIRST_LAST_05))
+                self.assertEqual(r, expected_row(r[0], DATA_05, FIRST_LAST_05))
 
     def test_pdf_says_which_fuel_and_keeps_the_headings(self):
-        for fuel in ("Regular", "Super"):
+        for fuel in ("Regular", "CNG"):
             resp, html = render_pdf_with_html(self.client, self.print_url(5, fuel))
             self.assertIn(f"{LABEL[fuel]} — سال 1405 — ماه 5", html)
-            other = LABEL["Super" if fuel == "Regular" else "Regular"]
+            other = LABEL["CNG" if fuel == "Regular" else "Regular"]
             self.assertNotIn(other, html.split("<table", 1)[0])                # the header names only this fuel
             for needle in ("کارکرد تمام نازل‌ها", "جایگاه", "شماره نازل", "کنتور اول ماه", "کنتور آخر ماه", "جمع فروش مکانیکی",
                            "جمع آزمایش", "جمع کارکرد", "مجموع آزمایش", "مجموع فروش مکانیکی", "مجموع مبلغ کل"):
@@ -330,12 +335,12 @@ class PdfTests(AllNozzlesBase):
         resp = self.client.get("/print/all-nozzles/?year=1405&month=5")
         self.assertEqual(resp.status_code, 200)
         self.assertIn("regular", resp["Content-Disposition"].lower())
-        sup = self.client.get(self.print_url(5, "Super"))
-        self.assertIn("super", sup["Content-Disposition"].lower())
+        sup = self.client.get(self.print_url(5, "CNG"))
+        self.assertIn("cng", sup["Content-Disposition"].lower())
 
     def test_each_pdf_is_one_portrait_page_with_unchanged_type_size(self):
         from pypdf import PdfReader
-        for fuel in ("Regular", "Super"):
+        for fuel in ("Regular", "CNG"):
             data = self.client.get(self.print_url(5, fuel)).content
             reader = PdfReader(io.BytesIO(data))
             self.assertEqual(len(reader.pages), 1, fuel)
@@ -354,7 +359,7 @@ class PdfTests(AllNozzlesBase):
 
 class KeyboardTests(AllNozzlesBase):
     def test_both_fuel_pages_use_the_shared_row_navigation(self):
-        for fuel in ("Regular", "Super"):
+        for fuel in ("Regular", "CNG"):
             html = self.page(5, fuel)
             self.assertIn('class="row-nav-table"', html)
             self.assertIn("TableRowNavigation.init", html)
@@ -362,7 +367,7 @@ class KeyboardTests(AllNozzlesBase):
 
     @unittest.skipUnless(NODE, "Node.js with the jsdom package is not installed (optional dev-only check)")
     def test_keyboard_navigation_on_both_fuels(self):
-        for fuel in ("Regular", "Super"):
+        for fuel in ("Regular", "CNG"):
             with tempfile.TemporaryDirectory() as tmp:
                 page = Path(tmp) / "page.html"
                 page.write_text(self.page(5, fuel), encoding="utf-8")

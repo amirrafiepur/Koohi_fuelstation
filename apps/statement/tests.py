@@ -30,7 +30,7 @@ class StatementServiceTests(TestCase):
         License.objects.create(start_date=datetime.date(2026, 8, 1), duration_days=365)
         station = Station.objects.create(name="S_stmt", province="P", city="C")
         self.regular = Product.objects.create(name="بنزین معمولی")
-        self.super_ = Product.objects.create(name="بنزین سوپر")
+        self.super_ = Product.objects.create(name="CNG")
         self.regular_tank = Tank.objects.create(station=station, product=self.regular, capacity=50000)
         self.super_tank = Tank.objects.create(station=station, product=self.super_, capacity=50000)
         self.nozzle = Nozzle.objects.create(tank=self.regular_tank, number=1)
@@ -46,7 +46,7 @@ class StatementServiceTests(TestCase):
         rows = build_statement_rows(1405, 5)
         self.assertEqual(len(rows), 2)
         products = {row["product"].name for row in rows}
-        self.assertEqual(products, {"بنزین معمولی", "بنزین سوپر"})
+        self.assertEqual(products, {"بنزین معمولی", "CNG"})
 
     def test_main_table_totals_match_petroleum_inventory_monthly(self):
         wd1 = self._wd()

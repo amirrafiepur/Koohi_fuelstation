@@ -1,7 +1,8 @@
 """
 Seeds the fixed station configuration: the station itself, the two
-products, the two tanks, and all 26 nozzles with their fixed tank
-assignment.
+products (Regular petrol and CNG), the two tanks, and all 18 nozzles
+with their fixed tank assignment: regular petrol nozzles 1-14 and CNG
+nozzles CNG 1-4 (numbered independently of the regular nozzles).
 
 This configuration is NOT editable through a GUI in Phase 1 -- per the
 architecture doc, future nozzle changes are made directly via this
@@ -15,8 +16,9 @@ from django.db import transaction
 
 from apps.stations.models import Station, Product, Tank, Nozzle
 
-REGULAR_NOZZLES = list(range(1, 19)) + [25, 26]
-SUPER_NOZZLES = list(range(19, 25))
+REGULAR_NOZZLES = list(range(1, 15))   # regular petrol nozzles 1-14
+CNG_NOZZLES = list(range(1, 5))        # CNG 1 - CNG 4 (own numbering)
+EXPECTED_NOZZLE_COUNT = len(REGULAR_NOZZLES) + len(CNG_NOZZLES)
 STATION_NAME = "Koohi 118"
 # Name stored by databases created for the previous station.
 LEGACY_STATION_NAME = "140 Jahan Pour"
@@ -50,38 +52,37 @@ class Command(BaseCommand):
         )
 
         regular, _ = Product.objects.get_or_create(name="Regular")
-        super_, _ = Product.objects.get_or_create(name="Super")
+        cng, _ = Product.objects.get_or_create(name="CNG")
 
         regular_tank, _ = Tank.objects.get_or_create(
             station=station, product=regular, defaults={"capacity": 0}
         )
-        super_tank, _ = Tank.objects.get_or_create(
-            station=station, product=super_, defaults={"capacity": 0}
+        cng_tank, _ = Tank.objects.get_or_create(
+            station=station, product=cng, defaults={"capacity": 0}
         )
 
         created_count = 0
-        for number in REGULAR_NOZZLES:
-            _, was_created = Nozzle.objects.get_or_create(
-                number=number, defaults={"tank": regular_tank}
-            )
-            created_count += int(was_created)
-
-        for number in SUPER_NOZZLES:
-            _, was_created = Nozzle.objects.get_or_create(
-                number=number, defaults={"tank": super_tank}
-            )
-            created_count += int(was_created)
+        # Nozzle numbers are unique per tank (product), so CNG 1-4 never
+        # collide with -- or get mistaken for -- regular nozzles.
+        for tank, numbers in ((regular_tank, REGULAR_NOZZLES), (cng_tank, CNG_NOZZLES)):
+            for number in numbers:
+                _, was_created = Nozzle.objects.get_or_create(
+                    tank=tank, number=number
+                )
+                created_count += int(was_created)
 
         total_nozzles = Nozzle.objects.count()
         self.stdout.write(
             self.style.SUCCESS(
                 f"Nozzles: {created_count} newly created, {total_nozzles} total "
-                f"(expected 26)."
+                f"(expected {EXPECTED_NOZZLE_COUNT})."
             )
         )
-        if total_nozzles != 26:
+        if total_nozzles != EXPECTED_NOZZLE_COUNT:
             self.stdout.write(
                 self.style.WARNING(
-                    "Total nozzle count is not 26 -- check for a prior partial seed."
+                    f"Total nozzle count is not {EXPECTED_NOZZLE_COUNT} -- check for a "
+                    "prior partial seed or a database created for the previous "
+                    "station layout."
                 )
             )

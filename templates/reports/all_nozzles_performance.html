@@ -70,7 +70,7 @@
     <tbody>
       {% for row in rows %}
       <tr style="border-bottom: 1px solid var(--color-border);">
-        <td style="padding: 0.4rem;" class="numeric">{{ row.nozzle_number }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ row.nozzle_identifier }}</td>
         <td style="padding: 0.4rem;" class="numeric">{{ row.first_meter|default_if_none:"—"|num }}</td>
         <td style="padding: 0.4rem;" class="numeric">{{ row.last_meter|default_if_none:"—"|num }}</td>
         <td style="padding: 0.4rem;" class="numeric">{{ row.total_mechanical_sales|num }}</td>

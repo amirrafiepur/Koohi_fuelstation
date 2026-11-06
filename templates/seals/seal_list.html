@@ -52,7 +52,7 @@
       {% for seal in seals %}
       <tr style="border-bottom: 1px solid var(--color-border);">
         <td style="padding: 0.4rem;" class="numeric">{{ seal.date|jalali }}</td>
-        <td style="padding: 0.4rem;" class="numeric">{{ seal.nozzle.number }}</td>
+        <td style="padding: 0.4rem;" class="numeric">{{ seal.nozzle.identifier }}</td>
         <td style="padding: 0.4rem;">{{ seal.nozzle.tank.product.name|persian_product }}</td>
         <td style="padding: 0.4rem;">{{ seal.get_section_display }}</td>
         <td style="padding: 0.4rem;">{{ seal.seal_number }}</td>

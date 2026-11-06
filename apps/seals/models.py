@@ -33,4 +33,4 @@ class NozzleSeal(models.Model):
         ordering = ["-date"]
 
     def __str__(self):
-        return f"Nozzle {self.nozzle.number} — {self.get_section_display()} — {self.date}"
+        return f"Nozzle {self.nozzle.identifier} — {self.get_section_display()} — {self.date}"

@@ -18,12 +18,12 @@ class DashboardSmokeTests(TestCase):
         License.objects.create(start_date=datetime.date.today(), duration_days=365)
         station = Station.objects.create(name="Koohi 118", province="Razavi Khorasan", city="Mashhad")
         regular = Product.objects.create(name="Regular")
-        super_ = Product.objects.create(name="Super")
+        super_ = Product.objects.create(name="CNG")
         self.regular_tank = Tank.objects.create(station=station, product=regular, capacity=50000)
         self.super_tank = Tank.objects.create(station=station, product=super_, capacity=30000)
-        for n in list(range(1, 19)) + [25, 26]:
+        for n in range(1, 15):
             Nozzle.objects.create(tank=self.regular_tank, number=n)
-        for n in range(19, 25):
+        for n in range(1, 5):
             Nozzle.objects.create(tank=self.super_tank, number=n)
 
     def test_login_page_loads(self):
@@ -73,12 +73,22 @@ class DashboardSmokeTests(TestCase):
             resp = self.client.get(url)
             self.assertIn("history.back()", resp.content.decode())
 
-    def test_dashboard_shows_all_26_nozzles(self):
+    def test_dashboard_shows_all_18_nozzles(self):
         self.client.login(username="op1", password="testpass123")
         resp = self.client.get("/")
         content = resp.content.decode()
         rendered_count = content.count('class="nozzle-grid__item"')
-        self.assertEqual(rendered_count, 26)
+        self.assertEqual(rendered_count, 18)
+
+    def test_dashboard_nozzle_grid_labels_regular_1_to_14_then_cng_1_to_4(self):
+        self.client.login(username="op1", password="testpass123")
+        content = self.client.get("/").content.decode()
+        import re
+        tiles = re.findall(r'<a [^>]*class="nozzle-grid__item"[^>]*data-product="([^"]*)">([^<]*)</a>', content)
+        self.assertEqual(
+            tiles,
+            [("بنزین معمولی", str(n)) for n in range(1, 15)] + [("CNG", f"CNG {n}") for n in range(1, 5)],
+        )
 
     def test_dashboard_shows_license_valid_badge(self):
         self.client.login(username="op1", password="testpass123")
@@ -127,7 +137,7 @@ class DashboardSmokeTests(TestCase):
         """
         Clicking a nozzle on the dashboard must take the operator to
         گزارش کارکرد هر نازل for THAT nozzle -- not to the sales entry
-        screen. Checked for every one of the 26 seeded nozzles, not just
+        screen. Checked for every one of the 18 seeded nozzles, not just
         one, since each button's link is built from that nozzle's own id.
         """
         self.client.login(username="op1", password="testpass123")
@@ -143,27 +153,27 @@ class DashboardSmokeTests(TestCase):
 
     def test_clicking_a_nozzle_shows_that_exact_nozzles_report(self):
         nozzle_1 = Nozzle.objects.get(tank=self.regular_tank, number=1)
-        nozzle_19 = Nozzle.objects.get(tank=self.super_tank, number=19)
+        cng_1 = Nozzle.objects.get(tank=self.super_tank, number=1)
 
         self.client.login(username="op1", password="testpass123")
 
         resp1 = self.client.get(f"/reports/nozzle-ledger/?nozzle_id={nozzle_1.id}")
         self.assertContains(resp1, "نازل 1 (")
 
-        resp19 = self.client.get(f"/reports/nozzle-ledger/?nozzle_id={nozzle_19.id}")
-        self.assertContains(resp19, "نازل 19 (")
+        resp_cng = self.client.get(f"/reports/nozzle-ledger/?nozzle_id={cng_1.id}")
+        self.assertContains(resp_cng, "نازل CNG 1 (")
 
 
 class DisplayHelpersTests(TestCase):
     """
     apps/core/display.py: Product.name -> Persian display label, without
-    touching the stored value. Stored "Regular"/"Super" are unaffected;
+    touching the stored value. Stored "Regular"/"CNG" are unaffected;
     an unmapped name (a future third product) passes through unchanged.
     """
 
     def test_known_product_names_map_to_persian(self):
         self.assertEqual(persian_product_name("Regular"), "بنزین معمولی")
-        self.assertEqual(persian_product_name("Super"), "بنزین سوپر")
+        self.assertEqual(persian_product_name("CNG"), "CNG")
 
     def test_unmapped_product_name_passes_through_unchanged(self):
         self.assertEqual(persian_product_name("Diesel"), "Diesel")
@@ -172,9 +182,9 @@ class DisplayHelpersTests(TestCase):
         from django.template import Context, Template
 
         rendered = Template("{% load display_tags %}{{ name|persian_product }}").render(
-            Context({"name": "Super"})
+            Context({"name": "CNG"})
         )
-        self.assertEqual(rendered, "بنزین سوپر")
+        self.assertEqual(rendered, "CNG")
 
 
 class TrimTrailingZerosTests(TestCase):

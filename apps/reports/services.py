@@ -72,10 +72,10 @@ def nozzle_performance_ledger(nozzle: Nozzle, start_date, end_date):
 def all_nozzles_monthly_summary(year: int, month: int, tank):
     """
     "لیست اطلاعات فروش": a monthly, nozzle-based report for ONE fuel type.
-    `tank` selects the fuel (Regular or Super); the report lists exactly the
+    `tank` selects the fuel (Regular or CNG); the report lists exactly the
     nozzles that belong to that tank -- from the data model, in nozzle-number
-    order (the seeded station gives Regular: 1-18, 25, 26 = 20 nozzles, and
-    Super: 19-24 = 6 nozzles) -- and never a nozzle of the other fuel. Each
+    order (the seeded station gives Regular: 1-14 = 14 nozzles, and
+    CNG: CNG 1-4 = 4 nozzles) -- and never a nozzle of the other fuel. Each
     row holds that nozzle's figures over the selected JALALI year/month
     (converted to a Gregorian range with jalali_month_bounds(), like every
     other monthly report):
@@ -124,11 +124,12 @@ def all_nozzles_monthly_summary(year: int, month: int, tank):
         acc["total_amount"] += sale.total_amount
 
     rows = []
-    for nozzle in Nozzle.objects.filter(tank=tank).order_by("number"):
+    for nozzle in Nozzle.objects.filter(tank=tank).select_related("tank__product").order_by("number"):
         number = nozzle.number
         acc = by_number.get(number)
         rows.append({
             "nozzle_number": number,
+            "nozzle_identifier": nozzle.identifier,       # "5" / "CNG 1" -- what the report shows
             "total_operation": acc["total_operation"] if acc else zero,
             "total_test": acc["total_test"] if acc else zero,
             "total_mechanical_sales": acc["total_mechanical_sales"] if acc else zero,

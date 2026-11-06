@@ -192,11 +192,11 @@ class ReportsHttpTests(TestCase):
 class NozzleLedgerArrowKeyNavigationTests(TestCase):
     """
     Task 4A: ArrowUp/ArrowDown navigate نازل‌ها گزارش کارکرد هر نازل
-    between nozzles 1..26, clamped at both ends. Verified structurally
+    between the 18 nozzles (regular 1..14, then CNG 1..4), clamped at both ends. Verified structurally
     (script present, correctly wired, boundary clamp logic present) --
     this project has no JS test runner, same verification level as the
     project's other JS keyboard shortcuts -- plus a functional check
-    that every target nozzle (1 and 26, the boundaries) the script would
+    that every target nozzle (1 and CNG 4, the boundaries) the script would
     navigate to is itself reachable and renders correctly, and that the
     date range it carries through is preserved.
     """
@@ -207,7 +207,10 @@ class NozzleLedgerArrowKeyNavigationTests(TestCase):
         station = Station.objects.create(name="S_arrow", province="P", city="C")
         product = Product.objects.create(name="Regular")
         tank = Tank.objects.create(station=station, product=product, capacity=50000)
-        self.nozzles = {n: Nozzle.objects.create(tank=tank, number=n) for n in range(1, 27)}
+        cng_tank = Tank.objects.create(station=station, product=Product.objects.create(name="CNG"), capacity=0)
+        # Regular nozzles keyed 1..14, CNG nozzles keyed "CNG 1".."CNG 4" (18 in all).
+        self.nozzles = {n: Nozzle.objects.create(tank=tank, number=n) for n in range(1, 15)}
+        self.nozzles.update({f"CNG {n}": Nozzle.objects.create(tank=cng_tank, number=n) for n in range(1, 5)})
         self.client.login(username="op_arrow", password="testpass123")
 
     def test_select_has_an_id_for_the_script_to_target(self):
@@ -226,20 +229,21 @@ class NozzleLedgerArrowKeyNavigationTests(TestCase):
         self.assertIn("'select'", content)
         self.assertIn("isContentEditable", content)
 
-    def test_options_are_in_ascending_nozzle_order_one_through_twenty_six(self):
+    def test_options_are_in_nozzle_order_regular_then_cng(self):
         """The script walks <option>s in DOM order to find next/previous
         -- this order IS the navigation order, so it must be exactly
-        1..26 ascending."""
+        regular 1..14 ascending, then CNG 1..4."""
         resp = self.client.get("/reports/nozzle-ledger/?nozzle_id=" + str(self.nozzles[1].id))
         content = resp.content.decode()
-        positions = [content.index(f'value="{self.nozzles[n].id}"') for n in range(1, 27)]
+        order = list(range(1, 15)) + [f"CNG {n}" for n in range(1, 5)]
+        positions = [content.index(f'value="{self.nozzles[n].id}"') for n in order]
         self.assertEqual(positions, sorted(positions))
 
-    def test_every_nozzle_from_one_to_twenty_six_is_a_reachable_target(self):
-        """Boundary + general reachability check: nozzle 1 and nozzle 26
+    def test_every_nozzle_boundary_is_a_reachable_target(self):
+        """Boundary + general reachability check: nozzle 1 and CNG 4
         (the two ends the clamp logic must respect) both render fine as
         navigation targets, as does a middle nozzle."""
-        for n in (1, 10, 26):
+        for n in (1, 10, "CNG 4"):
             resp = self.client.get(f"/reports/nozzle-ledger/?nozzle_id={self.nozzles[n].id}")
             self.assertEqual(resp.status_code, 200)
             self.assertContains(resp, f"نازل {n}")
@@ -661,10 +665,10 @@ class AllNozzlesPerformanceTests(TestCase):
         License.objects.create(start_date=datetime.date(2026, 8, 1), duration_days=365)
         station = Station.objects.create(name="S_all", province="P", city="C")
         self.regular = Product.objects.create(name="Regular")
-        self.super_ = Product.objects.create(name="Super")
+        self.super_ = Product.objects.create(name="CNG")
         self.regular_tank = Tank.objects.create(station=station, product=self.regular, capacity=50000)
         self.super_tank = Tank.objects.create(station=station, product=self.super_, capacity=30000)
-        # A realistic (smaller) mix of Regular/Super nozzles rather than
+        # A realistic (smaller) mix of Regular/CNG nozzles rather than
         # all 26, to keep fixtures readable -- the aggregation logic
         # itself doesn't care about the exact count.
         self.regular_nozzles = [
@@ -704,7 +708,7 @@ class PetroleumLedgerReworkTests(TestCase):
     sections, per-purchase-invoice detail on رسیده, the new cumulative
     totals (جمع کل رسیده/خارج شده), and the §6 data-consistency identity
     (جمع کل خارج شده + موجودی واقعی = جمع کل رسیده). The existing
-    Regular/Super tank-selector behavior is untouched -- these tests
+    Regular/CNG tank-selector behavior is untouched -- these tests
     exercise the service function per-tank exactly as before.
     """
 
@@ -1098,13 +1102,13 @@ class PetroleumLedgerReworkTests(TestCase):
             self.assertIn(col, content)
 
     def test_regular_super_tank_selector_still_works(self):
-        super_product = Product.objects.create(name="Super")
+        super_product = Product.objects.create(name="CNG")
         super_tank = Tank.objects.create(station=self.tank.station, product=super_product, capacity=30000)
         resp = self.client.get("/reports/petroleum-ledger/")
         # Persian display labels (see apps/core/display.py) -- stored
-        # Product.name values are still "Regular"/"Super".
+        # Product.name values are still "Regular"/"CNG".
         self.assertContains(resp, "بنزین معمولی")
-        self.assertContains(resp, "بنزین سوپر")
+        self.assertContains(resp, "CNG")
 
     def test_pdf_source_html_shows_persian_product_name(self):
         """Renders the actual printing/petroleum_ledger_print.html template
@@ -1229,7 +1233,7 @@ class MonthlyTankStatementReworkTests(TestCase):
         self.assertNotIn("کل خرید", content)
 
     def test_regular_super_separation_unchanged(self):
-        super_product = Product.objects.create(name="Super")
+        super_product = Product.objects.create(name="CNG")
         super_tank = Tank.objects.create(station=self.tank.station, product=super_product, capacity=30000)
         wd1 = DailyWorkingDay.objects.create(date=self.day1)
         for t in (self.tank, super_tank):
@@ -1238,9 +1242,9 @@ class MonthlyTankStatementReworkTests(TestCase):
 
         resp = self.client.get("/reports/petroleum-monthly/?year=1405&month=5")
         # Persian display labels (see apps/core/display.py) -- stored
-        # Product.name values are still "Regular"/"Super".
+        # Product.name values are still "Regular"/"CNG".
         self.assertContains(resp, "بنزین معمولی")
-        self.assertContains(resp, "بنزین سوپر")
+        self.assertContains(resp, "CNG")
 
     def test_print_pdf_generates_correctly(self):
         wd1 = DailyWorkingDay.objects.create(date=self.day1)

@@ -223,7 +223,7 @@ class TableNavigationBehaviourTests(TableNavigationBase):
         self.check_page("فاکتورهای فروش (day detail)")
 
     def test_purchase_invoices_two_tables(self):
-        """فاکتورهای خرید: Regular and Super tables as one continuous list."""
+        """فاکتورهای خرید: Regular and CNG tables as one continuous list."""
         self.check_page("فاکتورهای خرید (two tables)")
 
     def test_deposits_month(self):
@@ -267,7 +267,7 @@ class TableNavigationBehaviourTests(TableNavigationBase):
         self.check_page("مقایسه (two tables)")
 
     def test_purchase_page_with_one_empty_table_navigates_only_the_filled_one(self):
-        """فاکتورهای خرید where the Super table has no invoices: it shows a message instead of
+        """فاکتورهای خرید where the CNG table has no invoices: it shows a message instead of
         a table, so navigation simply covers the Regular table."""
         PurchaseInvoice.objects.filter(tank=self.stank).delete()
         html = self.get(f"/purchases/?{self.RANGE}")

@@ -38,7 +38,7 @@
   <tbody>
     {% for row in rows %}
     <tr>
-      <td class="numeric">{{ row.nozzle_number }}</td>
+      <td class="numeric">{{ row.nozzle_identifier }}</td>
       <td class="numeric">{{ row.first_meter|default_if_none:"—"|num }}</td>
       <td class="numeric">{{ row.last_meter|default_if_none:"—"|num }}</td>
       <td class="numeric">{{ row.total_mechanical_sales|num }}</td>

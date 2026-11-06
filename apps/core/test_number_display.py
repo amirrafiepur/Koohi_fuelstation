@@ -75,7 +75,7 @@ class NumberDisplayFixtureMixin:
         License.objects.create(start_date=datetime.date(2026, 8, 1), duration_days=365)
         station = Station.objects.create(name="Koohi 118", province="Razavi Khorasan", city="Mashhad")
         self.regular = Product.objects.create(name="Regular")
-        self.super = Product.objects.create(name="Super")
+        self.super = Product.objects.create(name="CNG")
         self.rtank = Tank.objects.create(station=station, product=self.regular, capacity=50000)
         self.stank = Tank.objects.create(station=station, product=self.super, capacity=30000)
         self.n1 = Nozzle.objects.create(tank=self.rtank, number=1)

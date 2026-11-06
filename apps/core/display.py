@@ -18,7 +18,7 @@ from decimal import Decimal, InvalidOperation
 #: returned unchanged -- this never breaks for products added later.
 _PRODUCT_PERSIAN_DISPLAY = {
     "Regular": "بنزین معمولی",
-    "Super": "بنزین سوپر",
+    "CNG": "CNG",
 }
 
 

@@ -86,7 +86,7 @@ def day_detail(request, date):
         accounting_start is not None and working_day.date == accounting_start
     )
 
-    tanks = Tank.objects.select_related("product").order_by("product__name")
+    tanks = Tank.objects.select_related("product")
     rows = []
     for tank in tanks:
         inventory_row = TankInventory.objects.filter(tank=tank, working_day=working_day).first()

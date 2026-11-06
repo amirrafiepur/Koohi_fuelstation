@@ -24,7 +24,7 @@ def build_mechanical_rows(year: int, month: int):
 
 
 def build_digital_rows(year: int, month: int):
-    tanks = Tank.objects.select_related("product").order_by("product__name")
+    tanks = Tank.objects.select_related("product")
     rows = []
     for tank in tanks:
         entry, _ = DigitalEntry.objects.get_or_create(tank=tank, year=year, month=month)

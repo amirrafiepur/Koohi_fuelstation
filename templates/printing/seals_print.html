@@ -23,7 +23,7 @@
     {% for seal in seals %}
     <tr>
       <td class="numeric">{{ seal.date|jalali }}</td>
-      <td class="numeric">{{ seal.nozzle.number }}</td>
+      <td class="numeric">{{ seal.nozzle.identifier }}</td>
       <td>{{ seal.nozzle.tank.product.name|persian_product }}</td>
       <td>{{ seal.get_section_display }}</td>
       <td>{{ seal.seal_number }}</td>

@@ -73,11 +73,11 @@ class ServiceTests(UnauthorizedDisplayBase):
     def setUp(self):
         super().setUp()
         self.make_tank(self.station, "Regular", 1, 10000, 50)
-        self.make_tank(self.station, "Super", 19, 10000, 30)
+        self.make_tank(self.station, "CNG", 19, 10000, 30)
 
     def test_calculation_is_untouched(self):
         rows = self.rows_by_name()
-        for name, shortage, commission, unauthorized in (("Regular", 50, "50.00", "5.00"), ("Super", 30, "30.00", "-15.00")):
+        for name, shortage, commission, unauthorized in (("Regular", 50, "50.00", "5.00"), ("CNG", 30, "30.00", "-15.00")):
             self.assertEqual(rows[name]["total_shortage"], D(shortage))
             self.assertEqual(rows[name]["commission"], D(commission))
             self.assertEqual(rows[name]["allowed_shortage"], D("45.00"))
@@ -86,7 +86,7 @@ class ServiceTests(UnauthorizedDisplayBase):
     def test_displayed_value_follows_the_threshold(self):
         rows = self.rows_by_name()
         self.assertEqual(rows["Regular"]["unauthorized_shortage_shown"], D("5.00"))     # commission 50 >= 45
-        self.assertEqual(rows["Super"]["unauthorized_shortage_shown"], D("0.00"))       # commission 30 <  45
+        self.assertEqual(rows["CNG"]["unauthorized_shortage_shown"], D("0.00"))       # commission 30 <  45
 
     def test_boundary_values(self):
         """Exactly 45 shows the calculated value (which is 0 there); 45.01 shows it; 44.99 shows 0."""
@@ -114,12 +114,12 @@ class ScreenAndPdfTests(UnauthorizedDisplayBase):
     def setUp(self):
         super().setUp()
         self.make_tank(self.station, "Regular", 1, 10000, 50)
-        self.make_tank(self.station, "Super", 19, 10000, 30)
+        self.make_tank(self.station, "CNG", 19, 10000, 30)
 
     def test_screen_shows_the_calculated_value_at_or_above_45_and_zero_below(self):
         html = self.client.get("/statement/?year=1405&month=5").content.decode()
         rows = {r[0]: r for r in lower_table_rows(html, 1)}
-        regular, sup = rows["بنزین معمولی"], rows["بنزین سوپر"]
+        regular, sup = rows["بنزین معمولی"], rows["CNG"]
         self.assertEqual((regular[2], regular[3]), ("50", "5"))          # commission 50 -> 5.00 shown as 5
         self.assertEqual((sup[2], sup[3]), ("30", "0"))                  # commission 30 -> 0 (calculated -15 hidden)
         self.assertNotIn("-15", " ".join(sup))
@@ -130,7 +130,7 @@ class ScreenAndPdfTests(UnauthorizedDisplayBase):
         self.assertTrue(resp.content.startswith(b"%PDF"))
         rows = {r[0]: r for r in lower_table_rows(html, 1)}
         self.assertEqual((rows["بنزین معمولی"][2], rows["بنزین معمولی"][3]), ("50", "5"))
-        self.assertEqual((rows["بنزین سوپر"][2], rows["بنزین سوپر"][3]), ("30", "0"))
+        self.assertEqual((rows["CNG"][2], rows["CNG"][3]), ("30", "0"))
         self.assertNotIn("-15", pdf_text(resp.content))
 
     def test_pdf_matches_the_screen_row_for_row(self):

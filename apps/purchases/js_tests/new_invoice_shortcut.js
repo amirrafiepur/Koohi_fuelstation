@@ -38,7 +38,7 @@ const press = (p, k, target, extra) => key(p, k, target, extra);
     const doc = p.doc;
     const links = Array.from(doc.querySelectorAll('a[data-new-invoice-link]'));
     const firstHref = links[0] && links[0].href;
-    check('fixture: two new-invoice links (Regular, Super) on the page', links.length === 2);
+    check('fixture: two new-invoice links (Regular, CNG) on the page', links.length === 2);
     check('fixture: the first link is the first product\'s new-entry form', /\/purchases\/[\d-]+\/tank\/\d+\/new\/$/.test(firstHref || ''));
     check('hint: the first button carries a keyboard-shortcut tooltip', (links[0].title || '').includes('+'));
 
@@ -102,7 +102,7 @@ const press = (p, k, target, extra) => key(p, k, target, extra);
     check('focus: works while a button has focus', p.clicks.length === 1);
     p.reset(); p.clicks.length = 0;
     press(p, '+', links[1], { shiftKey: true });
-    check('focus: works while a link (even the Super one) has focus, still opens the first form',
+    check('focus: works while a link (even the CNG one) has focus, still opens the first form',
       p.clicks.length === 1 && p.clicks[0] === firstHref);
     p.reset(); p.clicks.length = 0;
 

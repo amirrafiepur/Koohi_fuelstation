@@ -45,7 +45,7 @@
     <h2 class="panel__title">کارکرد نازل‌ها</h2>
     <div class="nozzle-grid" id="nozzle-grid">
       {% for nozzle in nozzles %}
-        <a href="{% url 'reports:nozzle_ledger' %}?nozzle_id={{ nozzle.id }}" class="nozzle-grid__item" data-product="{{ nozzle.tank.product.name|persian_product }}">{{ nozzle.number }}</a>
+        <a href="{% url 'reports:nozzle_ledger' %}?nozzle_id={{ nozzle.id }}" class="nozzle-grid__item" data-product="{{ nozzle.tank.product.name|persian_product }}">{{ nozzle.identifier }}</a>
       {% empty %}
         <span style="color: var(--color-ink-muted);">نازلی ثبت نشده است.</span>
       {% endfor %}

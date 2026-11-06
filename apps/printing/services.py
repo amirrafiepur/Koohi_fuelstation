@@ -11,6 +11,7 @@ from calls into the existing service layer.
 
 from apps.reports import services as report_services
 from apps.stations.models import Station
+from apps.stations.ordering import nozzle_order
 
 
 #: Presentation-only mapping for the single seeded Station row (see
@@ -99,7 +100,7 @@ def build_nozzle_monthly_context(year: int, month: int) -> dict:
     identical rows/totals to the on-screen monthly report."""
     from apps.stations.models import Nozzle
 
-    nozzles = Nozzle.objects.select_related("tank__product").order_by("number")
+    nozzles = Nozzle.objects.select_related("tank__product")
     rows = []
     for nozzle in nozzles:
         report = report_services.nozzle_performance_monthly(nozzle, year, month)
@@ -136,7 +137,7 @@ def build_petroleum_monthly_context(year: int, month: int) -> dict:
     monthly tank statement."""
     from apps.stations.models import Tank
 
-    tanks = Tank.objects.select_related("product").order_by("product__name")
+    tanks = Tank.objects.select_related("product")
     rows = []
     for tank in tanks:
         report = report_services.petroleum_inventory_monthly(tank, year, month)
@@ -225,7 +226,7 @@ def build_sales_invoice_context(working_day) -> dict:
 
     invoice = SalesInvoice.objects.filter(working_day=working_day).first()
     nozzle_sales = (
-        invoice.nozzle_sales.select_related("nozzle", "nozzle__tank__product").order_by("nozzle__number")
+        invoice.nozzle_sales.select_related("nozzle", "nozzle__tank__product").order_by(*nozzle_order("nozzle__"))
         if invoice
         else NozzleSale.objects.none()
     )
@@ -263,13 +264,13 @@ def build_purchases_ledger_context(start_date, end_date) -> dict:
     Reuses purchases.services.get_purchase_invoices_in_range() verbatim,
     once per tank -- identical PurchaseInvoice rows to the on-screen
     Purchases date-range list, split the same way into one entry per
-    product/tank so the print template can render Regular and Super as
+    product/tank so the print template can render Regular and CNG as
     two separate tables in the same PDF.
     """
     from apps.purchases import services as purchase_services
     from apps.stations.models import Tank
 
-    tanks = Tank.objects.select_related("product").order_by("product__name")
+    tanks = Tank.objects.select_related("product")
     tank_rows = [
         {
             "tank": tank,

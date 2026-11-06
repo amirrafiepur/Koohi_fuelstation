@@ -70,7 +70,7 @@ def get_daily_totals(working_day) -> dict:
 
 def get_most_recent_rate(tank) -> Decimal | None:
     """The most recently used sales rate for this tank's product, to
-    suggest as the default for the next entry. Regular and Super are
+    suggest as the default for the next entry. Regular and CNG are
     always independent since this is filtered by tank (and therefore by
     product)."""
     last_sale = (
@@ -101,50 +101,24 @@ def get_previous_new_meter(nozzle: Nozzle) -> Decimal | None:
     return last_sale.new_meter if last_sale else None
 
 
-# Required فاکتورهای فروش entry sequence: 1→2→...→18, then 25→26, then
-# 19→20→...→24 -- matching the station's physical pump/nozzle layout
-# rather than plain ascending nozzle number. This is a UI/workflow
-# ordering only; it never changes Nozzle.number, the database, or any
-# calculation -- see validate_all_nozzles_registered()'s use of it below
-# (the single place that drives both the initial "jump to first missing
-# nozzle" redirect and the "advance to next nozzle after saving" flow).
-NOZZLE_ENTRY_ORDER = [
-    1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-    25, 26,
-    19, 20, 21, 22, 23, 24,
-]
-
-
-def _nozzle_entry_sort_key(nozzle_number: int) -> int:
-    """Position of `nozzle_number` in NOZZLE_ENTRY_ORDER. A number not
-    listed there (e.g. a future 27th nozzle added later) sorts after
-    every listed one, in its own ascending numeric order, so this never
-    breaks for a station layout this constant doesn't yet know about."""
-    try:
-        return NOZZLE_ENTRY_ORDER.index(nozzle_number)
-    except ValueError:
-        return len(NOZZLE_ENTRY_ORDER) + nozzle_number
-
-
-def validate_all_nozzles_registered(working_day) -> tuple[bool, list[int]]:
+def validate_all_nozzles_registered(working_day) -> tuple[bool, list[Nozzle]]:
     """
-    Returns (all_registered, missing_nozzle_numbers) -- the latter in the
-    required فاکتورهای فروش entry sequence (NOZZLE_ENTRY_ORDER above),
-    not plain ascending order. A working day cannot be marked complete
-    (see workday/services.py:close_day) until every Nozzle has a
-    NozzleSale row for it.
+    Returns (all_registered, missing_nozzles) -- the latter as Nozzle
+    objects in the فاکتورهای فروش entry sequence: regular petrol nozzles
+    1..14, then CNG 1..CNG 4 (the Nozzle model's own ordering, see
+    stations/ordering.py). A working day cannot be marked complete (see
+    workday/services.py:close_day) until every Nozzle has a NozzleSale
+    row for it.
     """
-    all_nozzle_numbers = set(Nozzle.objects.values_list("number", flat=True))
+    all_nozzles = list(Nozzle.objects.select_related("tank__product"))
 
     try:
         invoice = SalesInvoice.objects.get(working_day=working_day)
-        registered_numbers = set(
-            invoice.nozzle_sales.values_list("nozzle__number", flat=True)
-        )
+        registered_ids = set(invoice.nozzle_sales.values_list("nozzle_id", flat=True))
     except SalesInvoice.DoesNotExist:
-        registered_numbers = set()
+        registered_ids = set()
 
-    missing = sorted(all_nozzle_numbers - registered_numbers, key=_nozzle_entry_sort_key)
+    missing = [n for n in all_nozzles if n.pk not in registered_ids]
     return (len(missing) == 0, missing)
 
 

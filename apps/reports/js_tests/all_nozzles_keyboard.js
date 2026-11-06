@@ -71,7 +71,7 @@ try {
     if (selectedIndex(p) !== i || !inViewport(p)) allVisible = false;
   }
   check('scroll: selected row stays inside the viewport on every step down (all rows)', allVisible);
-  const needsScroll = TABLE_TOP + rows * ROW_H > VIEWPORT;      // a short table (e.g. 6 Super nozzles) fits on screen
+  const needsScroll = TABLE_TOP + rows * ROW_H > VIEWPORT;      // a short table (e.g. 6 CNG nozzles) fits on screen
   if (needsScroll) check('scroll: the page really scrolled to follow the selection', p.window.__scrollY > y0);
   check('scroll: scrolling requested with block "nearest" on the selected row',
     p.window.__scrollCalls.length > 0 &&

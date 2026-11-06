@@ -2,10 +2,10 @@
 {% load jalali_tags %}
 {% load display_tags %}
 {% block body_class %}landscape{% endblock %}
-{% block title %}گزارش کارکرد نازل {{ nozzle.number }}{% endblock %}
+{% block title %}گزارش کارکرد {{ nozzle.label }}{% endblock %}
 {% block report_title %}گزارش کارکرد نازل — دفتر روزانه{% endblock %}
 {% block report_period %}
-  نازل {{ nozzle.number }} ({{ nozzle.tank.product.name|persian_product }}) —
+  {{ nozzle.label }} ({{ nozzle.tank.product.name|persian_product }}) —
   از {{ start_date|jalali }} تا {{ end_date|jalali }}
 {% endblock %}
 

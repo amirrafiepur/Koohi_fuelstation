@@ -73,7 +73,7 @@ class LedgerTotalsTests(TestCase):
         License.objects.create(start_date=datetime.date(2026, 8, 1), duration_days=365)
         station = Station.objects.create(name="Koohi 118", province="Razavi Khorasan", city="Mashhad")
         regular = Product.objects.create(name="Regular")
-        sup = Product.objects.create(name="Super")
+        sup = Product.objects.create(name="CNG")
         self.tank = Tank.objects.create(station=station, product=regular, capacity=50000)
         self.super_tank = Tank.objects.create(station=station, product=sup, capacity=30000)
         self.nozzle = Nozzle.objects.create(tank=self.tank, number=1)
@@ -108,7 +108,7 @@ class LedgerTotalsTests(TestCase):
                 )
             if actual is not None:
                 TankInventory.objects.create(tank=self.tank, working_day=wd, actual_inventory=Decimal(actual))
-            # Super tank: unrelated data that must never leak into the Regular totals.
+            # CNG tank: unrelated data that must never leak into the Regular totals.
             NozzleSale.objects.create(
                 sales_invoice=invoice, nozzle=self.super_nozzle, previous_meter=Decimal("0") + day * 100,
                 new_meter=Decimal("0") + day * 100 + 77, test=Decimal("3"), sales_rate=Decimal("1500"),

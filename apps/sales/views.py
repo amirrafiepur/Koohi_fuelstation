@@ -16,6 +16,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
 from apps.stations.models import Nozzle
+from apps.stations.ordering import nozzle_order
 from apps.workday import services as workday_services
 from apps.workday.models import DailyWorkingDay
 
@@ -83,12 +84,12 @@ def invoice_detail(request, date):
 
     invoice = SalesInvoice.objects.filter(working_day=working_day).first()
     nozzle_sales = (
-        invoice.nozzle_sales.select_related("nozzle", "nozzle__tank__product").order_by("nozzle__number")
+        invoice.nozzle_sales.select_related("nozzle", "nozzle__tank__product").order_by(*nozzle_order("nozzle__"))
         if invoice
         else NozzleSale.objects.none()
     )
 
-    all_registered, missing_numbers = sales_services.validate_all_nozzles_registered(working_day)
+    all_registered, missing_nozzles = sales_services.validate_all_nozzles_registered(working_day)
     totals = sales_services.get_daily_totals(working_day)
 
     context = {
@@ -96,16 +97,16 @@ def invoice_detail(request, date):
         "invoice": invoice,
         "nozzle_sales": nozzle_sales,
         "all_registered": all_registered,
-        "missing_numbers": missing_numbers,
+        "missing_nozzles": missing_nozzles,
         "totals": totals,
     }
     return render(request, "sales/invoice_detail.html", context)
 
 
 @login_required
-def nozzle_entry(request, date, nozzle_number=None):
+def nozzle_entry(request, date, nozzle_id=None):
     """
-    Sequential entry: if nozzle_number is omitted, redirects to the first
+    Sequential entry: if nozzle_id is omitted, redirects to the first
     unregistered nozzle for this working day. F2 (bound client-side) POSTs
     this same view; on save it redirects to the next unregistered nozzle,
     or back to the invoice detail once every nozzle is registered.
@@ -118,14 +119,14 @@ def nozzle_entry(request, date, nozzle_number=None):
 
     workday_services.set_global_date(request, working_day.date)
 
-    all_registered, missing_numbers = sales_services.validate_all_nozzles_registered(working_day)
+    all_registered, missing_nozzles = sales_services.validate_all_nozzles_registered(working_day)
 
-    if nozzle_number is None:
-        if missing_numbers:
-            return redirect("sales:nozzle_entry", date=date, nozzle_number=missing_numbers[0])
+    if nozzle_id is None:
+        if missing_nozzles:
+            return redirect("sales:nozzle_entry", date=date, nozzle_id=missing_nozzles[0].pk)
         return redirect("sales:invoice_detail", date=date)
 
-    nozzle = get_object_or_404(Nozzle, number=nozzle_number)
+    nozzle = get_object_or_404(Nozzle.objects.select_related("tank__product"), pk=nozzle_id)
 
     invoice = sales_services.get_or_create_sales_invoice(working_day, request.user)
     existing = NozzleSale.objects.filter(sales_invoice=invoice, nozzle=nozzle).first()
@@ -149,7 +150,7 @@ def nozzle_entry(request, date, nozzle_number=None):
                 # confirm_negative_meter=1 once the operator confirms.
                 context = {
                     "form": form, "working_day": working_day, "nozzle": nozzle,
-                    "missing_numbers": missing_numbers, "show_negative_warning": True,
+                    "missing_nozzles": missing_nozzles, "show_negative_warning": True,
                 }
                 return render(request, "sales/nozzle_entry.html", context)
 
@@ -160,8 +161,8 @@ def nozzle_entry(request, date, nozzle_number=None):
 
             _, still_missing = sales_services.validate_all_nozzles_registered(working_day)
             if still_missing:
-                return redirect("sales:nozzle_entry", date=date, nozzle_number=still_missing[0])
-            # All 26 nozzles are now registered for this day -- this is
+                return redirect("sales:nozzle_entry", date=date, nozzle_id=still_missing[0].pk)
+            # All 18 nozzles (regular 1-14, CNG 1-4) are now registered for this day -- this is
             # the one and only completion requirement for فاکتور فروش
             # (see workday/services.py:get_incomplete_days, which treats
             # this condition as complete regardless of this call too;
@@ -175,7 +176,7 @@ def nozzle_entry(request, date, nozzle_number=None):
 
     context = {
         "form": form, "working_day": working_day, "nozzle": nozzle,
-        "missing_numbers": missing_numbers, "show_negative_warning": False,
+        "missing_nozzles": missing_nozzles, "show_negative_warning": False,
     }
     return render(request, "sales/nozzle_entry.html", context)
 

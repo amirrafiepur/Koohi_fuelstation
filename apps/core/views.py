@@ -19,8 +19,8 @@ from apps.workday import services as workday_services
 
 @login_required
 def dashboard(request):
-    tanks = Tank.objects.select_related("product").order_by("product__name")
-    nozzles = Nozzle.objects.select_related("tank__product").order_by("number")
+    tanks = Tank.objects.select_related("product")
+    nozzles = Nozzle.objects.select_related("tank__product")
 
     lic = license_services.get_current_license()
     show_warning = license_services.should_show_expiry_warning()

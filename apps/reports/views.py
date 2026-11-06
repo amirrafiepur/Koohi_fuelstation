@@ -42,7 +42,7 @@ def nozzle_performance_ledger(request, nozzle_id=None):
     if request.GET.get("end_date"):
         end_date = datetime.date.fromisoformat(request.GET.get("end_date"))
 
-    nozzles = Nozzle.objects.select_related("tank__product").order_by("number")
+    nozzles = Nozzle.objects.select_related("tank__product")
     selected_nozzle = None
     rows = []
 
@@ -68,10 +68,10 @@ def nozzle_performance_ledger(request, nozzle_id=None):
 def all_nozzles_performance(request):
     """
     لیست اطلاعات فروش: a monthly, nozzle-based report for one fuel type. The
-    operator picks a JALALI year/month and the fuel (بنزین معمولی / سوپر --
+    operator picks a JALALI year/month and the fuel (بنزین معمولی / CNG --
     the same tank selector the petroleum reports use); the table lists only
     that fuel's nozzles, with a summary strip of column totals above it.
-    Regular and Super nozzles are never mixed. A deliberately separate
+    Regular and CNG nozzles are never mixed. A deliberately separate
     view/URL from nozzle_performance_ledger() (the per-nozzle daily ledger).
     """
     today = workday_services.get_today()
@@ -79,7 +79,7 @@ def all_nozzles_performance(request):
     year = int(request.GET.get("year", default_year))
     month = int(request.GET.get("month", default_month))
 
-    tanks = list(Tank.objects.select_related("product").order_by("product__name"))
+    tanks = list(Tank.objects.select_related("product"))
     if request.GET.get("tank_id"):
         selected_tank = get_object_or_404(Tank.objects.select_related("product"), pk=int(request.GET["tank_id"]))
     else:
@@ -110,7 +110,7 @@ def nozzle_performance_monthly(request):
     year = int(request.GET.get("year", default_year))
     month = int(request.GET.get("month", default_month))
 
-    nozzles = Nozzle.objects.select_related("tank__product").order_by("number")
+    nozzles = Nozzle.objects.select_related("tank__product")
     rows = []
 
     for nozzle in nozzles:
@@ -147,7 +147,7 @@ def petroleum_inventory_operations_ledger(request, tank_id=None):
     if request.GET.get("end_date"):
         end_date = datetime.date.fromisoformat(request.GET.get("end_date"))
 
-    tanks = Tank.objects.select_related("product").order_by("product__name")
+    tanks = Tank.objects.select_related("product")
     selected_tank = None
     rows = []
     totals = None
@@ -186,7 +186,7 @@ def petroleum_inventory_monthly(request):
     year = int(request.GET.get("year", default_year))
     month = int(request.GET.get("month", default_month))
 
-    tanks = Tank.objects.select_related("product").order_by("product__name")
+    tanks = Tank.objects.select_related("product")
     rows = []
 
     for tank in tanks:

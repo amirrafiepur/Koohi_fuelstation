@@ -45,7 +45,7 @@
   <tbody>
     {% for sale in nozzle_sales %}
     <tr>
-      <td class="numeric">{{ sale.nozzle.number }}</td>
+      <td class="numeric">{{ sale.nozzle.identifier }}</td>
       <td>{{ sale.nozzle.tank.product.name|persian_product }}</td>
       <td class="numeric">{{ sale.previous_meter|num }}</td>
       <td class="numeric">{{ sale.new_meter|num }}</td>

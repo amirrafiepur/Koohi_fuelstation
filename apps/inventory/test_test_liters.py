@@ -51,7 +51,7 @@ class TestLitersBase(TestCase):
         License.objects.create(start_date=d(2026, 8, 1), duration_days=365)     # accounting starts 2026-07-23
         call_command("seed_station", stdout=io.StringIO())
         self.tank = Tank.objects.get(product__name="Regular")
-        self.nozzle = Nozzle.objects.get(number=1)
+        self.nozzle = Nozzle.objects.get(tank__product__name="Regular", number=1)
         OpeningInventory.objects.update_or_create(
             tank=self.tank, effective_month=d(2026, 7, 23), defaults={"opening_quantity": D(100000)})
         self.client.login(username="op1", password="testpass123")

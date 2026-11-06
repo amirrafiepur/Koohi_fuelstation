@@ -73,7 +73,7 @@ class NozzleSale(models.Model):
         ]
 
     def __str__(self):
-        return f"Nozzle {self.nozzle.number} — {self.sales_invoice.working_day.date}"
+        return f"Nozzle {self.nozzle.identifier} — {self.sales_invoice.working_day.date}"
 
     # --- Derived values -----------------------------------------------
     # Exposed as simple properties per the architecture's "models may

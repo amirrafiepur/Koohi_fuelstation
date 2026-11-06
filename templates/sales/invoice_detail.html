@@ -17,7 +17,7 @@
 
   {% if not all_registered %}
     <div class="alert alert--warn">
-      {{ missing_numbers|length }} نازل ثبت نشده: {{ missing_numbers|join:", " }}
+      {{ missing_nozzles|length }} نازل ثبت نشده: {% for n in missing_nozzles %}{{ n.identifier }}{% if not forloop.last %}, {% endif %}{% endfor %}
       <br>
       <a href="{% url 'sales:nozzle_entry_next' working_day.date|date:'Y-m-d' %}" class="btn" style="display:inline-block; width:auto; margin-top:0.5rem;">
         ادامه ثبت نازل‌ها
@@ -53,7 +53,7 @@
     <tbody>
       {% for sale in nozzle_sales %}
       <tr style="border-bottom: 1px solid var(--color-border);">
-        <td style="padding: 0.5rem;" class="numeric">{{ sale.nozzle.number }}</td>
+        <td style="padding: 0.5rem;" class="numeric">{{ sale.nozzle.identifier }}</td>
         <td style="padding: 0.5rem;">{{ sale.nozzle.tank.product.name|persian_product }}</td>
         <td style="padding: 0.5rem;" class="numeric">{{ sale.previous_meter|num }}</td>
         <td style="padding: 0.5rem;" class="numeric">{{ sale.new_meter|num }}</td>
@@ -63,7 +63,7 @@
         <td style="padding: 0.5rem;" class="numeric">{{ sale.sales_rate|num }}</td>
         <td style="padding: 0.5rem;" class="numeric">{{ sale.total_amount|num }}</td>
         <td style="padding: 0.5rem;">
-          <a href="{% url 'sales:nozzle_entry' working_day.date|date:'Y-m-d' sale.nozzle.number %}">ویرایش</a>
+          <a href="{% url 'sales:nozzle_entry' working_day.date|date:'Y-m-d' sale.nozzle.pk %}">ویرایش</a>
         </td>
       </tr>
       {% endfor %}

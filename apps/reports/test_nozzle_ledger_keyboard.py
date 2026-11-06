@@ -54,7 +54,10 @@ class NozzleLedgerKeyboardBase(TestCase):
         License.objects.create(start_date=datetime.date(2026, 7, 23), duration_days=365)
         station = Station.objects.create(name="S", province="P", city="C")
         tank = Tank.objects.create(station=station, product=Product.objects.create(name="Regular"), capacity=50000)
-        self.nozzles = {n: Nozzle.objects.create(tank=tank, number=n) for n in range(1, 27)}
+        cng_tank = Tank.objects.create(station=station, product=Product.objects.create(name="CNG"), capacity=0)
+        # Regular nozzles keyed 1..14, CNG nozzles keyed "CNG 1".."CNG 4" (18 in all).
+        self.nozzles = {n: Nozzle.objects.create(tank=tank, number=n) for n in range(1, 15)}
+        self.nozzles.update({f"CNG {n}": Nozzle.objects.create(tank=cng_tank, number=n) for n in range(1, 5)})
         self.client.login(username="op_kb", password="testpass123")
         meter = Decimal("0")
         for i in range(DAYS):

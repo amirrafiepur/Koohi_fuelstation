@@ -18,7 +18,7 @@
         <option value="">— انتخاب کنید —</option>
         {% for nozzle in nozzles %}
           <option value="{{ nozzle.id }}" {% if selected_nozzle.id == nozzle.id %}selected{% endif %}>
-            نازل {{ nozzle.number }} ({{ nozzle.tank.product.name|persian_product }})
+            {{ nozzle.label }} ({{ nozzle.tank.product.name|persian_product }})
           </option>
         {% endfor %}
       </select>
@@ -39,7 +39,7 @@
 
   {% if selected_nozzle %}
     <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:0.75rem;">
-      <h3 style="font-size: 0.95rem; margin:0;">نازل {{ selected_nozzle.number }} ({{ selected_nozzle.tank.product.name|persian_product }})</h3>
+      <h3 style="font-size: 0.95rem; margin:0;">{{ selected_nozzle.label }} ({{ selected_nozzle.tank.product.name|persian_product }})</h3>
       {% if rows %}
       <a href="{% url 'printing:nozzle_ledger_print' selected_nozzle.id %}?start_date={{ start_date|date:'Y-m-d' }}&end_date={{ end_date|date:'Y-m-d' }}"
          target="_blank" class="btn" style="display:inline-block; width:auto; padding:0.4rem 0.9rem; font-size:0.85rem;">
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function () { JalaliCalendar.bindN
 // nozzle mode:
 //
 //   Nozzle mode (default): ArrowUp -> next nozzle, ArrowDown -> previous
-//     nozzle, clamped to the first/last nozzle in the list (1..26) --
+//     nozzle, clamped to the first/last nozzle in the list (regular 1..14, then CNG 1..4) --
 //     never wraps or goes out of range. Keeps the current date range (the
 //     select's own onchange already carries start_date/end_date through).
 TableRowNavigation.init({

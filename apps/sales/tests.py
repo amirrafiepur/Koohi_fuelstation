@@ -119,7 +119,7 @@ class ValidateAllNozzlesRegisteredTests(TestCase):
         )
         complete, missing = services.validate_all_nozzles_registered(self.working_day)
         self.assertFalse(complete)
-        self.assertEqual(missing, [2])
+        self.assertEqual([n.number for n in missing], [2])
 
     def test_all_nozzles_registered(self):
         invoice = SalesInvoice.objects.create(working_day=self.working_day, operator=self.user)
@@ -380,78 +380,103 @@ class PreviousMeterSuggestionHttpTests(_TestCase):
 
 class NozzleEntryOrderTests(_TestCase):
     """
-    Task: فاکتورهای فروش entry sequence must be
-    1->2->...->18->25->26->19->20->21->22->23->24, not plain ascending
-    order -- see services.NOZZLE_ENTRY_ORDER and its single use in
-    validate_all_nozzles_registered(), which drives both the initial
-    "jump to first missing nozzle" redirect and the "advance after
-    saving" flow.
+    Koohi 118 layout: 18 nozzles in two independent groups -- regular
+    petrol nozzles 1..14 and CNG nozzles CNG 1..CNG 4. The فاکتورهای فروش
+    entry sequence is 1->2->...->14 then CNG 1->CNG 2->CNG 3->CNG 4 (the
+    Nozzle model's own ordering, see validate_all_nozzles_registered(),
+    which drives both the initial "jump to first missing nozzle" redirect
+    and the "advance after saving" flow). A CNG nozzle is never "nozzle
+    15..18": it is identified by (product, number).
     """
 
     def setUp(self):
         self.user = _User.objects.create_user(username="op_order", password="testpass123")
         _License.objects.create(start_date=datetime.date(2026, 8, 1), duration_days=365)
         station = Station.objects.create(name="S_order", province="P", city="C")
-        product = Product.objects.create(name="Regular")
-        self.tank = Tank.objects.create(station=station, product=product, capacity=50000)
-        for n in range(1, 27):
-            Nozzle.objects.create(tank=self.tank, number=n)
+        regular = Product.objects.create(name="Regular")
+        cng = Product.objects.create(name="CNG")
+        self.regular_tank = Tank.objects.create(station=station, product=regular, capacity=50000)
+        self.cng_tank = Tank.objects.create(station=station, product=cng, capacity=0)
+        # Deliberately created CNG-first, to prove the order doesn't depend on creation order.
+        self.cng = [Nozzle.objects.create(tank=self.cng_tank, number=n) for n in range(1, 5)]
+        self.regular = [Nozzle.objects.create(tank=self.regular_tank, number=n) for n in range(1, 15)]
+        self.sequence = self.regular + self.cng
         self.client.login(username="op_order", password="testpass123")
         self.date = "2026-08-01"
 
-    def test_missing_numbers_follow_the_required_sequence(self):
+    def save(self, nozzle):
+        return self.client.post(
+            f"/sales/invoices/{self.date}/nozzle/{nozzle.pk}/",
+            {"previous_meter": "0", "new_meter": "10", "test": "0", "sales_rate": "1200"},
+        )
+
+    def test_missing_nozzles_follow_the_required_sequence(self):
         working_day = _DailyWorkingDay.objects.create(date=datetime.date(2026, 8, 1))
         complete, missing = services.validate_all_nozzles_registered(working_day)
         self.assertFalse(complete)
-        expected = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
-                    25, 26, 19, 20, 21, 22, 23, 24]
-        self.assertEqual(missing, expected)
+        self.assertEqual([n.identifier for n in missing],
+                         [str(n) for n in range(1, 15)] + ["CNG 1", "CNG 2", "CNG 3", "CNG 4"])
+        self.assertEqual(missing, self.sequence)
 
-    def test_entry_jumps_from_eighteen_to_twenty_five(self):
-        def save(n):
-            return self.client.post(
-                f"/sales/invoices/{self.date}/nozzle/{n}/",
-                {"previous_meter": "0", "new_meter": "10", "test": "0", "sales_rate": "1200"},
-            )
-        for n in range(1, 18):  # save nozzles 1..17
-            save(n)
-        resp = save(18)
-        self.assertRedirects(resp, f"/sales/invoices/{self.date}/nozzle/25/")
+    def test_entry_jumps_from_fourteen_to_cng_one(self):
+        for nozzle in self.regular[:-1]:
+            self.save(nozzle)
+        resp = self.save(self.regular[-1])
+        self.assertRedirects(resp, f"/sales/invoices/{self.date}/nozzle/{self.cng[0].pk}/")
 
-    def test_entry_jumps_from_twenty_six_to_nineteen(self):
-        def save(n):
-            return self.client.post(
-                f"/sales/invoices/{self.date}/nozzle/{n}/",
-                {"previous_meter": "0", "new_meter": "10", "test": "0", "sales_rate": "1200"},
-            )
-        for n in list(range(1, 19)) + [25]:  # save 1..18, then 25
-            save(n)
-        resp = save(26)
-        self.assertRedirects(resp, f"/sales/invoices/{self.date}/nozzle/19/")
+    def test_entry_advances_between_cng_nozzles_in_order(self):
+        for nozzle in self.regular:
+            self.save(nozzle)
+        for current, following in zip(self.cng, self.cng[1:]):
+            resp = self.save(current)
+            self.assertRedirects(resp, f"/sales/invoices/{self.date}/nozzle/{following.pk}/")
 
-    def test_entry_completes_after_twenty_four(self):
-        def save(n):
-            return self.client.post(
-                f"/sales/invoices/{self.date}/nozzle/{n}/",
-                {"previous_meter": "0", "new_meter": "10", "test": "0", "sales_rate": "1200"},
-            )
-        for n in list(range(1, 19)) + [25, 26] + list(range(19, 24)):
-            save(n)
-        resp = save(24)  # the 26th and final nozzle
+    def test_entry_completes_after_cng_four(self):
+        for nozzle in self.sequence[:-1]:
+            self.save(nozzle)
+        resp = self.save(self.cng[-1])  # the 18th and final nozzle
         self.assertRedirects(resp, f"/sales/invoices/{self.date}/")
 
     def test_nozzle_entry_next_jumps_to_nozzle_one_first(self):
         resp = self.client.get(f"/sales/invoices/{self.date}/nozzle/")
-        self.assertRedirects(resp, f"/sales/invoices/{self.date}/nozzle/1/")
+        self.assertRedirects(resp, f"/sales/invoices/{self.date}/nozzle/{self.regular[0].pk}/")
 
-    def test_nozzle_ids_and_total_count_unaffected(self):
-        """Scoping check: this is a UI/workflow ordering only -- nozzle
-        IDs/numbers themselves and the total count are untouched."""
-        self.assertEqual(Nozzle.objects.count(), 26)
+    def test_entry_page_names_the_nozzle_and_its_product(self):
+        regular_page = self.client.get(f"/sales/invoices/{self.date}/nozzle/{self.regular[4].pk}/")
+        self.assertContains(regular_page, "نازل 5 — بنزین معمولی")
+        cng_page = self.client.get(f"/sales/invoices/{self.date}/nozzle/{self.cng[0].pk}/")
+        self.assertContains(cng_page, "نازل CNG 1 — CNG")
+        self.assertNotContains(cng_page, "نازل 15")
+
+    def test_invoice_detail_lists_missing_nozzles_by_identifier_and_rows_in_order(self):
+        self.save(self.cng[1])
+        self.save(self.regular[2])
+        resp = self.client.get(f"/sales/invoices/{self.date}/")
+        self.assertContains(resp, "16 نازل ثبت نشده")
+        self.assertContains(resp, "CNG 1, CNG 3, CNG 4")
+        rows = [sale.nozzle.identifier for sale in resp.context["nozzle_sales"]]
+        self.assertEqual(rows, ["3", "CNG 2"])
+
+    def test_nozzle_count_and_numbering(self):
+        self.assertEqual(Nozzle.objects.count(), 18)
         self.assertEqual(
-            sorted(Nozzle.objects.values_list("number", flat=True)),
-            list(range(1, 27)),
+            sorted(Nozzle.objects.filter(tank=self.regular_tank).values_list("number", flat=True)),
+            list(range(1, 15)),
         )
+        self.assertEqual(
+            sorted(Nozzle.objects.filter(tank=self.cng_tank).values_list("number", flat=True)),
+            [1, 2, 3, 4],
+        )
+
+    def test_same_number_in_both_groups_is_allowed_but_not_within_one(self):
+        from django.db import IntegrityError, transaction
+
+        self.assertEqual(Nozzle.objects.filter(number=1).count(), 2)       # regular 1 and CNG 1
+        with self.assertRaises(IntegrityError), transaction.atomic():
+            Nozzle.objects.create(tank=self.cng_tank, number=1)
+
+    def test_default_nozzle_ordering_is_regular_then_cng(self):
+        self.assertEqual(list(Nozzle.objects.all()), self.sequence)
 
 
 class InvoiceDisplayTrimsTrailingZerosTests(_TestCase):

@@ -34,7 +34,7 @@ try {
   const rows = p.doc.querySelectorAll('#nozzle-ledger-table tbody tr').length;
   const options = Array.from(p.select.options).filter((o) => o.value);
   const startValue = p.select.value;
-  check('fixture: page has many rows (>= 30) and 26 nozzles', rows >= 30 && options.length === 26);
+  check('fixture: page has many rows (>= 30) and 18 nozzles (regular 1-14, CNG 1-4)', rows >= 30 && options.length === 18);
 
   // ---- Mode 1 (default): nozzle navigation, unchanged
   const idx = options.findIndex((o) => o.value === startValue);

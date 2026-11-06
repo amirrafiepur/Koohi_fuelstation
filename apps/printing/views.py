@@ -56,7 +56,7 @@ def nozzle_ledger_print(request, nozzle_id):
     end_date = datetime.date.fromisoformat(request.GET["end_date"])
 
     context = printing_services.build_nozzle_ledger_context(nozzle, start_date, end_date)
-    filename = f"nozzle-{nozzle.number}-ledger-{start_date}-{end_date}.pdf"
+    filename = f"nozzle-{nozzle.identifier.replace(' ', '-').lower()}-ledger-{start_date}-{end_date}.pdf"
     return _render_pdf_response("printing/nozzle_ledger_print.html", context, filename)
 
 
@@ -67,7 +67,7 @@ def all_nozzles_performance_print(request):
     if request.GET.get("tank_id"):
         tank = get_object_or_404(Tank.objects.select_related("product"), pk=int(request.GET["tank_id"]))
     else:                                    # same default as the screen: the first fuel (Regular)
-        tank = Tank.objects.select_related("product").order_by("product__name").first()
+        tank = Tank.objects.select_related("product").first()
         if tank is None:
             raise Http404("No tank configured.")
 

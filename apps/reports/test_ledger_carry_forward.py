@@ -6,7 +6,7 @@
                         جمع کل رسیده = موجودی واقعی آخرین تاریخ ثبت‌شده ماه قبل + جمع روزانه‌ی رسیده همان روز.
   (The previous month's جمع کل رسیده is NOT carried forward.)
 
-Hand-worked data (Regular tank, opening 100,000; Super tank, opening 50,000). Per day,
+Hand-worked data (Regular tank, opening 100,000; CNG tank, opening 50,000). Per day,
     total = previous actual + purchases + test + previous overage
     theoretical = total - (sales + test) = total - operation ; overage = max(actual - theoretical, 0)
     جمع روزانه‌ی رسیده = purchases + test + overage
@@ -18,7 +18,7 @@ Hand-worked data (Regular tank, opening 100,000; Super tank, opening 50,000). Pe
            08-26 (d4)        0     20    320  115,620    25            45       116,610
  month 07  09-28 (d5)    5,000      0    400  120,230     0         5,000       115,620 (d4 actual) + 5,000 = 120,620
            09-29 (d6)  1,000+500    2    102  121,639     9         1,511       122,131
- Super     07-24 (d1)    2,000      0    300   51,700     0         2,000       50,000 + 2,000 = 52,000
+ CNG     07-24 (d1)    2,000      0    300   51,700     0         2,000       50,000 + 2,000 = 52,000
            08-25 (d3)    1,000      0    100   52,600     0         1,000       51,700 (d1 actual) + 1,000 = 52,700
 """
 
@@ -58,7 +58,7 @@ class CarryForwardBase(TestCase):
         License.objects.create(start_date=d(2026, 7, 23), duration_days=365)
         call_command("seed_station", stdout=io.StringIO())
         self.regular = Tank.objects.get(product__name="Regular")
-        self.super = Tank.objects.get(product__name="Super")
+        self.super = Tank.objects.get(product__name="CNG")
         for tank, opening in ((self.regular, 100000), (self.super, 50000)):
             OpeningInventory.objects.update_or_create(
                 tank=tank, effective_month=d(2026, 7, 23), defaults={"opening_quantity": D(opening)})
@@ -72,12 +72,12 @@ class CarryForwardBase(TestCase):
             (D4, 1, 2200, 2520, 20, [], "115620", self.regular),
             (D5, 1, 2520, 2920, 0, [5000], "120230", self.regular),
             (D6, 1, 2920, 3022, 2, [1000, 500], "121639", self.regular),
-            (D1, 19, 0, 300, 0, [2000], "51700", self.super),
-            (D3, 19, 300, 400, 0, [1000], "52600", self.super),
+            (D1, 1, 0, 300, 0, [2000], "51700", self.super),
+            (D3, 1, 300, 400, 0, [1000], "52600", self.super),
         ):
             wd, _ = DailyWorkingDay.objects.get_or_create(date=day)
             inv, _ = SalesInvoice.objects.get_or_create(working_day=wd, defaults={"operator": self.user})
-            NozzleSale.objects.create(sales_invoice=inv, nozzle=Nozzle.objects.get(number=number),
+            NozzleSale.objects.create(sales_invoice=inv, nozzle=Nozzle.objects.get(tank=tank, number=number),
                                       previous_meter=D(prev), new_meter=D(new), test=D(test), sales_rate=D(1200))
             for quantity in purchases:
                 PurchaseInvoice.objects.create(working_day=wd, tank=tank, quantity=quantity, purchase_rate=D(1200),
@@ -158,7 +158,7 @@ class MonthRuleTests(CarryForwardBase):
         super_06 = self.cumulative(self.month(self.super, 6))
         self.assertEqual({k: int(v) for k, v in super_05.items()}, {D1: 52000})             # 50,000 (opening) + 2,000
         self.assertEqual({k: int(v) for k, v in super_06.items()}, {D3: 52700})             # 51,700 (month 5 last actual) + 1,000
-        self.assertEqual(self.cumulative(self.month(self.regular, 6))[D3], D(116565))        # Regular unaffected by Super
+        self.assertEqual(self.cumulative(self.month(self.regular, 6))[D3], D(116565))        # Regular unaffected by CNG
 
     def test_first_working_day_without_an_inventory_entry_carries_into_the_next_recorded_day(self):
         TankInventory.objects.filter(tank=self.regular, working_day__date=D3).delete()

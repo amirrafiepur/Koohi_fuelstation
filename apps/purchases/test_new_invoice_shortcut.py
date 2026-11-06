@@ -35,7 +35,7 @@ class NewInvoiceShortcutBase(TestCase):
         License.objects.create(start_date=datetime.date.today() - datetime.timedelta(days=3), duration_days=365)
         station = Station.objects.create(name="S", province="P", city="C")
         self.regular = Tank.objects.create(station=station, product=Product.objects.create(name="Regular"), capacity=50000)
-        self.super = Tank.objects.create(station=station, product=Product.objects.create(name="Super"), capacity=30000)
+        self.super = Tank.objects.create(station=station, product=Product.objects.create(name="CNG"), capacity=30000)
         self.client.login(username="op_plus", password="testpass123")
 
     def list_html(self):

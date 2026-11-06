@@ -75,7 +75,7 @@ class PurchaseWorkflowHttpTests(_TestCase):
         _License.objects.create(start_date=datetime.date(2026, 8, 1), duration_days=365)
         station = Station.objects.create(name="S", province="P", city="C")
         self.regular = Product.objects.create(name="Regular")
-        self.super_ = Product.objects.create(name="Super")
+        self.super_ = Product.objects.create(name="CNG")
         self.regular_tank = Tank.objects.create(station=station, product=self.regular, capacity=50000)
         self.super_tank = Tank.objects.create(station=station, product=self.super_, capacity=30000)
         self.client.login(username="op1", password="testpass123")
@@ -163,7 +163,7 @@ class PurchaseWorkflowHttpTests(_TestCase):
         resp = self.client.get(f"/purchases/{self.date}/tank/{self.regular_tank.id}/new/")
         self.assertContains(resp, "1234")
 
-    # Rule 6: Regular and Super rate suggestions are fully independent.
+    # Rule 6: Regular and CNG rate suggestions are fully independent.
     def test_regular_and_super_rate_suggestions_independent(self):
         self.client.post(
             f"/purchases/{self.date}/tank/{self.regular_tank.id}/new/",
@@ -178,7 +178,7 @@ class PurchaseWorkflowHttpTests(_TestCase):
             f"/purchases/{self.date}/tank/{self.regular_tank.id}/new/",
             {"quantity": 50, "purchase_rate": "1800"},
         )
-        # ...must not affect Super's suggested rate.
+        # ...must not affect CNG's suggested rate.
         super_suggestion = services.get_most_recent_rate(self.super_tank)
         self.assertEqual(super_suggestion, Decimal("1500"))
         regular_suggestion = services.get_most_recent_rate(self.regular_tank)
@@ -385,7 +385,7 @@ class PurchaseInvoiceDeletionTests(_TestCase):
 
 class PurchasesRangeViewTests(_TestCase):
     """Covers the reworked خرید section: a date-range view with two
-    separate Regular/Super tables, the six specified columns, the
+    separate Regular/CNG tables, the six specified columns, the
     renamed fields, removed fields staying out of the UI, and one
     combined print button."""
 
@@ -394,7 +394,7 @@ class PurchasesRangeViewTests(_TestCase):
         _License.objects.create(start_date=datetime.date(2026, 8, 1), duration_days=365)
         station = Station.objects.create(name="S2", province="P", city="C")
         self.regular = Product.objects.create(name="Regular")
-        self.super_ = Product.objects.create(name="Super")
+        self.super_ = Product.objects.create(name="CNG")
         self.regular_tank = Tank.objects.create(station=station, product=self.regular, capacity=50000)
         self.super_tank = Tank.objects.create(station=station, product=self.super_, capacity=30000)
         self.client.login(username="op2", password="testpass123")
@@ -407,9 +407,9 @@ class PurchasesRangeViewTests(_TestCase):
         resp = self.client.get("/purchases/")
         self.assertEqual(resp.status_code, 200)
         # Persian display labels (see apps/core/display.py) -- stored
-        # Product.name values are still "Regular"/"Super".
+        # Product.name values are still "Regular"/"CNG".
         self.assertContains(resp, "بنزین معمولی")
-        self.assertContains(resp, "بنزین سوپر")
+        self.assertContains(resp, "CNG")
 
     def test_range_view_has_exactly_the_six_required_columns_in_order(self):
         working_day = DailyWorkingDay.objects.create(date=datetime.date(2026, 8, 1))
@@ -470,7 +470,7 @@ class PurchasesRangeViewTests(_TestCase):
         resp = self.client.get("/purchases/?start_date=2026-08-01&end_date=2026-08-01")
         content = resp.content.decode()
         # Both rows appear, and the Regular quantity appears before the
-        # Super quantity, matching the tank ordering (product__name).
+        # CNG quantity, matching the tank ordering (product__name).
         self.assertIn("1,111", content)
         self.assertIn("2,222", content)
 
