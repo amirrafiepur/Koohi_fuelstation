@@ -454,8 +454,10 @@ class NozzleEntryOrderTests(_TestCase):
         resp = self.client.get(f"/sales/invoices/{self.date}/")
         self.assertContains(resp, "16 نازل ثبت نشده")
         self.assertContains(resp, "CNG 1, CNG 3, CNG 4")
-        rows = [sale.nozzle.identifier for sale in resp.context["nozzle_sales"]]
-        self.assertEqual(rows, ["3", "CNG 2"])
+        # The invoice is shown one product at a time (default: Regular).
+        self.assertEqual([s.nozzle.identifier for s in resp.context["nozzle_sales"]], ["3"])
+        cng = self.client.get(f"/sales/invoices/{self.date}/?product=CNG")
+        self.assertEqual([s.nozzle.identifier for s in cng.context["nozzle_sales"]], ["CNG 2"])
 
     def test_nozzle_count_and_numbering(self):
         self.assertEqual(Nozzle.objects.count(), 18)

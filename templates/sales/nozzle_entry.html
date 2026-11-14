@@ -31,11 +31,13 @@
       {{ form.new_meter }}
       {% for error in form.new_meter.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
     </div>
+    {% if "test" in form.fields %}
     <div class="form-group">
       <label class="form-label" for="{{ form.test.id_for_label }}">{{ form.test.label }}</label>
       {{ form.test }}
       {% for error in form.test.errors %}<div class="form-error">{{ error }}</div>{% endfor %}
     </div>
+    {% endif %}
     <div class="form-group">
       <label class="form-label" for="{{ form.sales_rate.id_for_label }}">{{ form.sales_rate.label }}</label>
       {{ form.sales_rate }}

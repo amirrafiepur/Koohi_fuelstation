@@ -17,10 +17,10 @@ JALALI 1405/05 (2026-07-23 .. 2026-08-22):
               operation 2,500  test 15  sales 2,485  amount 1,188,000+1,943,500 = 3,131,500
   nozzle 2  (Regular): d1 500->900 test0 @1200      -> 400 | 0 | 400 | 480,000
   nozzle 14 (Regular): d2 100->160 test4 @1500      -> 60 | 4 | 56 | 84,000
-  nozzle CNG 1 (CNG):  d1 0->300 test2 @1500 | d3 300->450 test0 @1600
+  nozzle CNG 1 (CNG):  d1 0->300 test0 @1500 | d3 300->450 test0 @1600
               operation 450  test 2  sales 448  amount 447,000+240,000 = 687,000
   REGULAR TOTALS: operation 2,960 | test 19 | sales 2,941 | amount 3,695,500
-  CNG     TOTALS: operation   450 | test  2 | sales   448 | amount   687,000
+  CNG     TOTALS: operation   450 | test  0 | sales   450 | amount   690,000
   (together: 3,410 | 21 | 3,389 | 4,382,500 -- both fuels together)
 JALALI 1405/06 (must never leak into 05): nozzle 1 2500->2800 test1 @1300 -> 300 | 1 | 299 | 388,700
 """
@@ -58,13 +58,13 @@ NUMBERS = {"Regular": REGULAR_NUMBERS, "CNG": CNG_NUMBERS}
 LABEL = {"Regular": "بنزین معمولی", "CNG": "CNG"}
 
 # nozzle -> (operation, test, mechanical sales, amount)
-DATA_05 = {"1": (2500, 15, 2485, 3131500), "2": (400, 0, 400, 480000), "14": (60, 4, 56, 84000), "CNG 1": (450, 2, 448, 687000)}
+DATA_05 = {"1": (2500, 15, 2485, 3131500), "2": (400, 0, 400, 480000), "14": (60, 4, 56, 84000), "CNG 1": (450, 0, 450, 690000)}
 DATA_06 = {"1": (300, 1, 299, 388700)}
 FIRST_LAST_05 = {"1": (0, 2500), "2": (500, 900), "14": (100, 160), "CNG 1": (0, 450)}      # (first previous, last new)
 FIRST_LAST_06 = {"1": (2500, 2800)}
-TOTALS_05 = {"Regular": (2960, 19, 2941, 3695500), "CNG": (450, 2, 448, 687000)}
+TOTALS_05 = {"Regular": (2960, 19, 2941, 3695500), "CNG": (450, 0, 450, 690000)}
 TOTALS_06 = {"Regular": (300, 1, 299, 388700), "CNG": (0, 0, 0, 0)}
-BOTH_FUELS_TOTALS_05 = (3410, 21, 3389, 4382500)
+BOTH_FUELS_TOTALS_05 = (3410, 19, 3391, 4385500)
 
 FIELDS = ("total_operation", "total_test", "total_mechanical_sales", "total_amount")
 TOTAL_KEYS = ("operation", "test", "mechanical-sales", "amount")
@@ -75,17 +75,21 @@ def fmt(n):
 
 
 def expected_row(number, month_data, first_last):
-    """The six cells a nozzle's row must show: number | first | last | sales | test | operation."""
+    """The cells a nozzle's row must show: number | first | last | sales | test | operation.
+    CNG has no «تست»: its row has five cells, without the test cell."""
     op, test, sales, _amount = month_data.get(number, (0, 0, 0, 0))
     first, last = first_last.get(number, (None, None))
     dash = "—"
-    return [str(number), dash if first is None else fmt(first), dash if last is None else fmt(last),
-            fmt(sales), fmt(test), fmt(op)]
+    cells = [str(number), dash if first is None else fmt(first), dash if last is None else fmt(last), fmt(sales)]
+    if not str(number).startswith("CNG "):
+        cells.append(fmt(test))
+    return cells + [fmt(op)]
 
 
 def screen_totals(html):
     d = dict(re.findall(r'data-total="([a-z-]+)"[^>]*>([^<]*)<', html))
-    return tuple(d[k] for k in TOTAL_KEYS)
+    # CNG's screen has no test total at all (see the dedicated tests); it counts as 0 here.
+    return tuple(d.get(k, "0") if k == "test" else d[k] for k in TOTAL_KEYS)
 
 
 def table_rows(html, table_id="all-nozzles-table"):
@@ -100,7 +104,10 @@ def to_int(text):
 
 def pdf_summary(html):
     block = html.split("print-summary", 1)[1].split("</table>", 1)[0]
-    return tuple(v.strip() for v in re.findall(r'class="numeric"[^>]*>([^<]*)<', block))
+    values = tuple(v.strip() for v in re.findall(r'class="numeric"[^>]*>([^<]*)<', block))
+    if len(values) == 3:                       # CNG: no test total in the summary -> counts as 0
+        values = (values[0], "0") + values[1:]
+    return values
 
 
 def pdf_table_rows(html):
@@ -130,7 +137,7 @@ class AllNozzlesBase(TestCase):
         self.add_sale(day(2026, 7, 24), "1", 0, 1000, 10, 1200)
         self.add_sale(day(2026, 7, 26), "1", 1000, 2500, 5, 1300)
         self.add_sale(day(2026, 7, 24), "2", 500, 900, 0, 1200)
-        self.add_sale(day(2026, 7, 24), "CNG 1", 0, 300, 2, 1500)
+        self.add_sale(day(2026, 7, 24), "CNG 1", 0, 300, 0, 1500)      # CNG has no test (always 0)
         self.add_sale(day(2026, 8, 2), "CNG 1", 300, 450, 0, 1600)
         self.add_sale(day(2026, 7, 26), "14", 100, 160, 4, 1500)
         self.add_sale(day(2026, 8, 25), "1", 2500, 2800, 1, 1300)      # month 06 -- must not leak into 05
@@ -243,11 +250,19 @@ class SelectorAndScreenTests(AllNozzlesBase):
     def test_header_labels_and_summary_labels_are_unchanged(self):
         html = self.page(5, "CNG")
         head = html.split('id="all-nozzles-table"', 1)[1].split("</thead>", 1)[0]
-        self.assertEqual(re.findall(r"<th[^>]*>([^<]*)</th>", head),
-                         ["شماره نازل", "کنتور اول ماه", "کنتور آخر ماه", "جمع فروش مکانیکی", "جمع آزمایش", "جمع کارکرد"])
+        self.assertEqual(re.findall(r"<th[^>]*>([^<]*)</th>", head), ["شماره نازل", "کنتور اول ماه", "کنتور آخر ماه", "جمع فروش مکانیکی", "جمع کارکرد"])
         summary = html.split('id="all-nozzles-totals"', 1)[1].split("</div>\n  </div>", 1)[0]
         self.assertEqual(re.findall(r'<div class="form-label">([^<]+)</div>', summary),
+                         ["جمع کارکرد", "مجموع فروش مکانیکی", "مجموع مبلغ کل"])
+        self.assertNotIn('data-total="test"', html)
+        # Regular petrol keeps its «آزمایش» column and total unchanged.
+        regular = self.page(5, "Regular")
+        rhead = regular.split('id="all-nozzles-table"', 1)[1].split("</thead>", 1)[0]
+        self.assertEqual(re.findall(r"<th[^>]*>([^<]*)</th>", rhead), ["شماره نازل", "کنتور اول ماه", "کنتور آخر ماه", "جمع فروش مکانیکی", "جمع آزمایش", "جمع کارکرد"])
+        rsummary = regular.split('id="all-nozzles-totals"', 1)[1].split("</div>\n  </div>", 1)[0]
+        self.assertEqual(re.findall(r'<div class="form-label">([^<]+)</div>', rsummary),
                          ["جمع کارکرد", "مجموع آزمایش", "مجموع فروش مکانیکی", "مجموع مبلغ کل"])
+        self.assertIn('data-total="test"', regular)
 
     def test_summary_follows_the_selected_fuel(self):
         for month, expected in ((5, TOTALS_05), (6, TOTALS_06)):
@@ -259,7 +274,8 @@ class SelectorAndScreenTests(AllNozzlesBase):
             html = self.page(5, fuel)
             rows = table_rows(html)
             shown = tuple(to_int(x) for x in screen_totals(html))
-            self.assertEqual(shown[:3], (sum(to_int(r[5]) for r in rows), sum(to_int(r[4]) for r in rows),
+            test_sum = sum(to_int(r[4]) for r in rows) if fuel == "Regular" else 0        # CNG rows carry no test cell
+            self.assertEqual(shown[:3], (sum(to_int(r[-1]) for r in rows), test_sum,
                                          sum(to_int(r[3]) for r in rows)))
             self.assertEqual(shown[3], TOTALS_05[fuel][3])
 
@@ -323,8 +339,10 @@ class PdfTests(AllNozzlesBase):
             other = LABEL["CNG" if fuel == "Regular" else "Regular"]
             self.assertNotIn(other, html.split("<table", 1)[0])                # the header names only this fuel
             for needle in ("کارکرد تمام نازل‌ها", "جایگاه", "شماره نازل", "کنتور اول ماه", "کنتور آخر ماه", "جمع فروش مکانیکی",
-                           "جمع آزمایش", "جمع کارکرد", "مجموع آزمایش", "مجموع فروش مکانیکی", "مجموع مبلغ کل"):
+                           "جمع کارکرد", "مجموع فروش مکانیکی", "مجموع مبلغ کل"):
                 self.assertIn(needle, html, needle)
+            for test_label in ("جمع آزمایش", "مجموع آزمایش"):          # regular petrol only; CNG has no test
+                (self.assertIn if fuel == "Regular" else self.assertNotIn)(test_label, html, (fuel, test_label))
             main = html.split("print-summary", 1)[1].split("</table>", 1)[1]
             self.assertNotIn("جمع مبلغ کل", main)
             self.assertIn("مجموع مبلغ کل", html.split("</table>", 1)[0])

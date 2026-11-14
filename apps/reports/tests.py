@@ -1105,10 +1105,11 @@ class PetroleumLedgerReworkTests(TestCase):
         super_product = Product.objects.create(name="CNG")
         super_tank = Tank.objects.create(station=self.tank.station, product=super_product, capacity=30000)
         resp = self.client.get("/reports/petroleum-ledger/")
-        # Persian display labels (see apps/core/display.py) -- stored
-        # Product.name values are still "Regular"/"CNG".
+        # Persian display label (see apps/core/display.py). The tank selector
+        # offers Regular only -- CNG has no tank inventory ledger.
         self.assertContains(resp, "بنزین معمولی")
-        self.assertContains(resp, "CNG")
+        self.assertNotContains(resp, "CNG")
+        self.assertEqual(self.client.get(f"/reports/petroleum-ledger/?tank_id={super_tank.id}").status_code, 404)
 
     def test_pdf_source_html_shows_persian_product_name(self):
         """Renders the actual printing/petroleum_ledger_print.html template
@@ -1241,10 +1242,10 @@ class MonthlyTankStatementReworkTests(TestCase):
             TankInventory.objects.create(tank=t, working_day=wd1, actual_inventory=Decimal("0"))
 
         resp = self.client.get("/reports/petroleum-monthly/?year=1405&month=5")
-        # Persian display labels (see apps/core/display.py) -- stored
-        # Product.name values are still "Regular"/"CNG".
+        # Persian display label (see apps/core/display.py). CNG has no tank
+        # inventory, so even with a CNG tank + inventory row it is not reported.
         self.assertContains(resp, "بنزین معمولی")
-        self.assertContains(resp, "CNG")
+        self.assertNotContains(resp, "CNG")
 
     def test_print_pdf_generates_correctly(self):
         wd1 = DailyWorkingDay.objects.create(date=self.day1)

@@ -57,9 +57,10 @@ class ComparisonServiceTests(TestCase):
 
     def test_digital_rows_always_one_per_tank(self):
         rows = build_digital_rows(1405, 5)
-        self.assertEqual(len(rows), 2)
+        # One row per inventory-tracked tank: CNG has no inventory, so it never appears.
+        self.assertEqual(len(rows), 1)
         products = {row["product"].name for row in rows}
-        self.assertEqual(products, {"بنزین معمولی", "CNG"})
+        self.assertEqual(products, {"بنزین معمولی"})
 
     def test_digital_rows_default_to_zero(self):
         rows = build_digital_rows(1405, 5)

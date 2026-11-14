@@ -33,7 +33,7 @@ class NozzleSealForm(forms.ModelForm):
     # then "نازل CNG 1" .. "نازل CNG 4" instead of ModelForm's default
     # English "Nozzle ..." labels.
     nozzle = NozzleChoiceField(
-        queryset=Nozzle.objects.select_related("tank__product"),
+        queryset=Nozzle.objects.sealable().select_related("tank__product"),
         label="نازل",
         widget=forms.Select(attrs={"class": "form-input"}),
     )

@@ -16,7 +16,7 @@
     <tr>
       <th>تاریخ</th>
       <th>کنتور قبلی</th>
-      <th>آزمایش</th>
+      {% if nozzle.has_test_field %}<th>آزمایش</th>{% endif %}
       <th>فروش مکانیکی</th>
       <th>جمع روزانه</th>
       <th>جمع کل</th>
@@ -29,7 +29,7 @@
     <tr>
       <td class="numeric">{{ row.date|jalali }}</td>
       <td class="numeric">{{ row.previous_meter|num }}</td>
-      <td class="numeric">{{ row.test|num }}</td>
+      {% if nozzle.has_test_field %}<td class="numeric">{{ row.test|num }}</td>{% endif %}
       <td class="numeric">{{ row.mechanical_sales|num }}</td>
       <td class="numeric">{{ row.daily_total|num }}</td>
       <td class="numeric">{{ row.cumulative_total|num }}</td>

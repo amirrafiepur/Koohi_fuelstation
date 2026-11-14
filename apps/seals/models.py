@@ -3,6 +3,7 @@ NozzleSeal is event-based, NOT a daily record: a row is created only when a
 seal is installed or replaced, not once per working day.
 """
 
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from apps.stations.models import Nozzle
@@ -26,6 +27,11 @@ class NozzleSeal(models.Model):
     section = models.CharField(max_length=20, choices=SECTION_CHOICES)
     date = models.DateField()
     seal_number = models.CharField(max_length=100)
+
+    def clean(self):
+        # CNG nozzles have no seal numbers in this station.
+        if self.nozzle_id and not self.nozzle.has_seals:
+            raise ValidationError({"nozzle": "برای نازل‌های CNG پلمپ ثبت نمی‌شود."})
 
     class Meta:
         verbose_name = "Nozzle Seal"

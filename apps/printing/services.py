@@ -137,7 +137,7 @@ def build_petroleum_monthly_context(year: int, month: int) -> dict:
     monthly tank statement."""
     from apps.stations.models import Tank
 
-    tanks = Tank.objects.select_related("product")
+    tanks = Tank.objects.inventory_tracked().select_related("product")
     rows = []
     for tank in tanks:
         report = report_services.petroleum_inventory_monthly(tank, year, month)
@@ -214,27 +214,37 @@ def build_comparison_context(year: int, month: int) -> dict:
     }
 
 
-def build_sales_invoice_context(working_day) -> dict:
+def build_sales_invoice_context(working_day, product_name=None) -> dict:
     """
     "فاکتورهای فروش" daily invoice: reuses the exact same data sources as
     apps.sales.views.invoice_detail() (sales_services.get_daily_totals()
     and the same nozzle_sales queryset shape), so the PDF shows exactly
     what the on-screen page shows for that day -- no recalculation here.
+
+    Like the page, it covers ONE product at a time: `product_name` is the
+    same `?product=` value the page uses and goes through the same
+    resolver, so the PDF contains exactly the selected table.
     """
     from apps.sales import services as sales_services
     from apps.sales.models import SalesInvoice, NozzleSale
 
+    product = sales_services.resolve_invoice_product(
+        sales_services.get_invoice_products(), product_name
+    )
     invoice = SalesInvoice.objects.filter(working_day=working_day).first()
     nozzle_sales = (
-        invoice.nozzle_sales.select_related("nozzle", "nozzle__tank__product").order_by(*nozzle_order("nozzle__"))
+        invoice.nozzle_sales.filter(nozzle__tank__product=product)
+        .select_related("nozzle", "nozzle__tank__product").order_by(*nozzle_order("nozzle__"))
         if invoice
         else NozzleSale.objects.none()
     )
-    totals = sales_services.get_daily_totals(working_day)
+    totals = sales_services.get_daily_totals(working_day, product=product)
 
     return {
         "station": get_station_metadata(),
         "working_day": working_day,
+        "product": product,
+        "show_test": product is None or product.has_test_field,
         "nozzle_sales": nozzle_sales,
         "totals": totals,
     }
@@ -264,13 +274,13 @@ def build_purchases_ledger_context(start_date, end_date) -> dict:
     Reuses purchases.services.get_purchase_invoices_in_range() verbatim,
     once per tank -- identical PurchaseInvoice rows to the on-screen
     Purchases date-range list, split the same way into one entry per
-    product/tank so the print template can render Regular and CNG as
+    product/tank so the print template can render each tracked product as
     two separate tables in the same PDF.
     """
     from apps.purchases import services as purchase_services
     from apps.stations.models import Tank
 
-    tanks = Tank.objects.select_related("product")
+    tanks = Tank.objects.inventory_tracked().select_related("product")
     tank_rows = [
         {
             "tank": tank,

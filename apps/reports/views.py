@@ -147,13 +147,13 @@ def petroleum_inventory_operations_ledger(request, tank_id=None):
     if request.GET.get("end_date"):
         end_date = datetime.date.fromisoformat(request.GET.get("end_date"))
 
-    tanks = Tank.objects.select_related("product")
+    tanks = Tank.objects.inventory_tracked().select_related("product")
     selected_tank = None
     rows = []
     totals = None
 
     if tank_id:
-        selected_tank = Tank.objects.get(pk=tank_id)
+        selected_tank = get_object_or_404(Tank.objects.inventory_tracked(), pk=tank_id)
         rows = report_services.petroleum_inventory_operations_ledger(
             selected_tank, start_date, end_date
         )
@@ -186,7 +186,7 @@ def petroleum_inventory_monthly(request):
     year = int(request.GET.get("year", default_year))
     month = int(request.GET.get("month", default_month))
 
-    tanks = Tank.objects.select_related("product")
+    tanks = Tank.objects.inventory_tracked().select_related("product")
     rows = []
 
     for tank in tanks:

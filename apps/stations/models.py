@@ -45,8 +45,28 @@ class Product(models.Model):
         verbose_name = "Product"
         verbose_name_plural = "Products"
 
+    @property
+    def has_test_field(self) -> bool:
+        """Whether sales for this product record a «تست» (test) quantity.
+        Regular petrol does; CNG does not -- its sales are
+        previous meter, new meter and rate only."""
+        return self.name != CNG_PRODUCT_NAME
+
     def __str__(self):
         return self.name
+
+
+class TankQuerySet(models.QuerySet):
+    def inventory_tracked(self):
+        """
+        Tanks that take part in purchase, inventory, tank-statement and
+        monthly comparison accounting: every tank EXCEPT CNG. CNG has no
+        purchase invoices and no tank inventory in this station's
+        accounting; it exists as a Tank row only so its nozzles have a
+        product. Every inventory-related screen, report and PDF must
+        start from this queryset, never from Tank.objects directly.
+        """
+        return self.exclude(product__name=CNG_PRODUCT_NAME)
 
 
 class Tank(models.Model):
@@ -62,14 +82,29 @@ class Tank(models.Model):
         help_text="Tank capacity in liters."
     )
 
+    objects = TankQuerySet.as_manager()
+
     class Meta:
         verbose_name = "Tank"
         verbose_name_plural = "Tanks"
         # Regular first, then CNG (see ordering.py).
         ordering = tank_order()
 
+    @property
+    def tracks_inventory(self) -> bool:
+        """False for CNG (no purchases / tank inventory); see
+        TankQuerySet.inventory_tracked()."""
+        return self.product.name != CNG_PRODUCT_NAME
+
     def __str__(self):
         return f"{self.product.name} tank"
+
+
+class NozzleQuerySet(models.QuerySet):
+    def sealable(self):
+        """Nozzles that carry seal numbers («پلمپ ها»): every nozzle
+        except CNG -- CNG nozzles have no seals in this station."""
+        return self.exclude(tank__product__name=CNG_PRODUCT_NAME)
 
 
 class Nozzle(models.Model):
@@ -89,6 +124,8 @@ class Nozzle(models.Model):
     )
     number = models.PositiveIntegerField()
 
+    objects = NozzleQuerySet.as_manager()
+
     class Meta:
         verbose_name = "Nozzle"
         verbose_name_plural = "Nozzles"
@@ -102,6 +139,16 @@ class Nozzle(models.Model):
     @property
     def is_cng(self) -> bool:
         return self.tank.product.name == CNG_PRODUCT_NAME
+
+    @property
+    def has_test_field(self) -> bool:
+        """False for CNG nozzles: no «تست» is entered, shown or counted."""
+        return self.tank.product.has_test_field
+
+    @property
+    def has_seals(self) -> bool:
+        """False for CNG nozzles: they have no seal numbers («پلمپ ها»)."""
+        return not self.is_cng
 
     @property
     def identifier(self) -> str:

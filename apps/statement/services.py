@@ -33,12 +33,13 @@ UNAUTHORIZED_DISPLAY_COMMISSION_THRESHOLD = Decimal("45")
 
 def build_statement_rows(year: int, month: int):
     """
-    One row per tank/product for the selected Jalali year/month. Always
-    one row per existing tank (never skipped for having no data that
-    month), so both "بنزین معمولی" and "CNG" always appear.
+    One row per inventory-tracked tank/product for the selected Jalali
+    year/month (Regular only -- CNG has no purchases or tank inventory, so
+    it never appears here). Always one row per such tank (never skipped for
+    having no data that month).
     """
     first_day, last_day = jalali_month_bounds(year, month)
-    tanks = Tank.objects.select_related("product")
+    tanks = Tank.objects.inventory_tracked().select_related("product")
 
     rows = []
     for tank in tanks:

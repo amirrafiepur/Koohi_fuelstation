@@ -9,7 +9,7 @@
   <thead>
     <tr>
       <th>جمع کارکرد</th>
-      <th>مجموع آزمایش</th>
+      {% if tank.product.has_test_field %}<th>مجموع آزمایش</th>{% endif %}
       <th>مجموع فروش مکانیکی</th>
       <th>مجموع مبلغ کل</th>
     </tr>
@@ -17,7 +17,7 @@
   <tbody>
     <tr>
       <td class="numeric">{{ totals.total_operation|num }}</td>
-      <td class="numeric">{{ totals.total_test|num }}</td>
+      {% if tank.product.has_test_field %}<td class="numeric">{{ totals.total_test|num }}</td>{% endif %}
       <td class="numeric">{{ totals.total_mechanical_sales|num }}</td>
       <td class="numeric">{{ totals.total_amount|num }}</td>
     </tr>
@@ -31,7 +31,7 @@
       <th>کنتور اول ماه</th>
       <th>کنتور آخر ماه</th>
       <th>جمع فروش مکانیکی</th>
-      <th>جمع آزمایش</th>
+      {% if tank.product.has_test_field %}<th>جمع آزمایش</th>{% endif %}
       <th>جمع کارکرد</th>
     </tr>
   </thead>
@@ -42,7 +42,7 @@
       <td class="numeric">{{ row.first_meter|default_if_none:"—"|num }}</td>
       <td class="numeric">{{ row.last_meter|default_if_none:"—"|num }}</td>
       <td class="numeric">{{ row.total_mechanical_sales|num }}</td>
-      <td class="numeric">{{ row.total_test|num }}</td>
+      {% if tank.product.has_test_field %}<td class="numeric">{{ row.total_test|num }}</td>{% endif %}
       <td class="numeric">{{ row.total_operation|num }}</td>
     </tr>
     {% endfor %}

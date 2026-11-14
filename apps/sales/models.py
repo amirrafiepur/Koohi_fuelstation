@@ -75,6 +75,14 @@ class NozzleSale(models.Model):
     def __str__(self):
         return f"Nozzle {self.nozzle.identifier} — {self.sales_invoice.working_day.date}"
 
+    def save(self, *args, **kwargs):
+        # CNG has no «تست»: whatever the caller set, a CNG sale always
+        # stores 0, so every calculation and report downstream (operation
+        # - test, totals, ledgers) operates without a test value.
+        if not self.nozzle.has_test_field:
+            self.test = 0
+        super().save(*args, **kwargs)
+
     # --- Derived values -----------------------------------------------
     # Exposed as simple properties per the architecture's "models may
     # expose simple derived properties" allowance. Multi-record

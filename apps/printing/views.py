@@ -88,7 +88,7 @@ def nozzle_monthly_print(request):
 
 @login_required
 def petroleum_ledger_print(request, tank_id):
-    tank = Tank.objects.select_related("product").get(pk=tank_id)
+    tank = get_object_or_404(Tank.objects.inventory_tracked().select_related("product"), pk=tank_id)
 
     start_date = datetime.date.fromisoformat(request.GET["start_date"])
     end_date = datetime.date.fromisoformat(request.GET["end_date"])
@@ -144,8 +144,9 @@ def sales_invoice_print(request, date):
 
     working_day = DailyWorkingDay.objects.get(date=datetime.date.fromisoformat(date))
 
-    context = printing_services.build_sales_invoice_context(working_day)
-    filename = f"sales-invoice-{date}.pdf"
+    context = printing_services.build_sales_invoice_context(working_day, request.GET.get("product"))
+    suffix = f"-{context['product'].name.lower()}" if context["product"] else ""
+    filename = f"sales-invoice-{date}{suffix}.pdf"
     return _render_pdf_response("printing/sales_invoice_print.html", context, filename)
 
 

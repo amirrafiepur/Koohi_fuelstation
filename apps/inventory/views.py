@@ -86,7 +86,7 @@ def day_detail(request, date):
         accounting_start is not None and working_day.date == accounting_start
     )
 
-    tanks = Tank.objects.select_related("product")
+    tanks = Tank.objects.inventory_tracked().select_related("product")
     rows = []
     for tank in tanks:
         inventory_row = TankInventory.objects.filter(tank=tank, working_day=working_day).first()
@@ -133,7 +133,7 @@ def opening_inventory_entry(request, date, tank_id):
     ledger. Never forces a non-zero value.
     """
     working_day, _ = DailyWorkingDay.objects.get_or_create(date=_parse_date(date))
-    tank = get_object_or_404(Tank, pk=tank_id)
+    tank = get_object_or_404(Tank.objects.inventory_tracked(), pk=tank_id)
     accounting_start = workday_services.get_accounting_start_date()
 
     if accounting_start is None or working_day.date != accounting_start:
@@ -184,7 +184,7 @@ def actual_inventory_entry(request, date, tank_id):
         messages.error(request, reason)
         return redirect("inventory:choose_date")
 
-    tank = get_object_or_404(Tank, pk=tank_id)
+    tank = get_object_or_404(Tank.objects.inventory_tracked(), pk=tank_id)
     existing = TankInventory.objects.filter(tank=tank, working_day=working_day).first()
 
     previous_balance, previous_overage = inventory_services.get_previous_balance_and_overage(

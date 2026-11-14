@@ -65,7 +65,7 @@ def seal_create(request):
 
 @login_required
 def seal_edit(request, pk):
-    seal = get_object_or_404(NozzleSeal, pk=pk)
+    seal = get_object_or_404(seal_services.sealable_seals(), pk=pk)
 
     if request.method == "POST":
         form = NozzleSealForm(request.POST, instance=seal)
@@ -86,7 +86,7 @@ def seal_delete(request, pk):
     project-wide editing/deletion rule -- this view only deletes on POST,
     never on GET, and the template requires an explicit confirm click.
     """
-    seal = get_object_or_404(NozzleSeal, pk=pk)
+    seal = get_object_or_404(seal_services.sealable_seals(), pk=pk)
 
     if request.method == "POST":
         seal.delete()

@@ -42,8 +42,13 @@ class NozzleSaleForm(forms.ModelForm):
             "sales_rate": "نرخ فروش",
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, nozzle=None, **kwargs):
         super().__init__(*args, **kwargs)
+        # CNG nozzles have no «تست»: the field is removed from the form
+        # entirely (not hidden), so it can neither be shown, submitted nor
+        # required. Regular petrol keeps the field exactly as before.
+        if nozzle is not None and not nozzle.has_test_field:
+            del self.fields["test"]
         # Display only: the "کنتور قبلی" value shown in the form -- whether
         # pre-filled from the nozzle's last new meter or loaded from an
         # existing record -- drops a pointless ".00" tail (1334572.00 ->

@@ -2,8 +2,8 @@
 {% load jalali_tags %}
 {% load display_tags %}
 {% block body_class %}landscape{% endblock %}
-{% block title %}فاکتور فروش روزانه — {{ working_day.date|jalali }}{% endblock %}
-{% block report_title %}فاکتور فروش روزانه{% endblock %}
+{% block title %}فاکتور فروش روزانه — {{ product.name|persian_product }} — {{ working_day.date|jalali }}{% endblock %}
+{% block report_title %}فاکتور فروش روزانه — {{ product.name|persian_product }}{% endblock %}
 {% block report_period %}{{ working_day.date|jalali }}{% endblock %}
 
 {% block report_body %}
@@ -13,7 +13,7 @@
     <tr>
       <th>تعداد نازل</th>
       <th>مجموع عملکرد</th>
-      <th>مجموع تست</th>
+      {% if show_test %}<th>مجموع تست</th>{% endif %}
       <th>مجموع فروش</th>
     </tr>
   </thead>
@@ -21,7 +21,7 @@
     <tr>
       <td class="numeric">{{ totals.nozzle_count|num }}</td>
       <td class="numeric">{{ totals.total_operation|num }}</td>
-      <td class="numeric">{{ totals.total_test|num }}</td>
+      {% if show_test %}<td class="numeric">{{ totals.total_test|num }}</td>{% endif %}
       <td class="numeric">{{ totals.total_sales|num }}</td>
     </tr>
   </tbody>
@@ -36,7 +36,7 @@
       <th>کنتور قبلی</th>
       <th>کنتور جدید</th>
       <th>عملکرد</th>
-      <th>تست</th>
+      {% if show_test %}<th>تست</th>{% endif %}
       <th>فروش مکانیکی</th>
       <th>نرخ</th>
       <th>مبلغ کل</th>
@@ -50,7 +50,7 @@
       <td class="numeric">{{ sale.previous_meter|num }}</td>
       <td class="numeric">{{ sale.new_meter|num }}</td>
       <td class="numeric">{{ sale.operation|num }}</td>
-      <td class="numeric">{{ sale.test|num }}</td>
+      {% if show_test %}<td class="numeric">{{ sale.test|num }}</td>{% endif %}
       <td class="numeric">{{ sale.mechanical_sales|num }}</td>
       <td class="numeric">{{ sale.sales_rate|num }}</td>
       <td class="numeric">{{ sale.total_amount|num }}</td>

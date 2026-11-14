@@ -1,8 +1,9 @@
 """
 Purchase views: choosing a working date (reuses the same chronology rules
 as sales -- rule 10) to enter a purchase for a tank/product (rule 1: any
-number of these per day), plus a date-range purchase list -- two separate
-tables, Regular and CNG -- with a combined print button, mirroring the
+number of these per day), plus a date-range purchase list -- one table
+per inventory-tracked tank (Regular only; CNG has no purchases) -- with a
+combined print button, mirroring the
 Nozzle Performance and Petroleum Ledger report sections' UI/workflow.
 
 No business math lives here -- only orchestration of purchases/services.py
@@ -79,7 +80,8 @@ def invoice_list(request):
     since the range can span many days, but every row's own total_amount
     is the model's existing property, unchanged).
 
-    Regular/CNG stay two independent tables, one per Tank, exactly as
+    Only inventory-tracked tanks (Regular -- CNG has no purchases) get a
+    table, one per Tank, exactly as
     before -- this view does not merge or reinterpret that separation,
     only replaces the single-day window with a date range.
     """
@@ -93,7 +95,7 @@ def invoice_list(request):
     if request.GET.get("end_date"):
         end_date = datetime.date.fromisoformat(request.GET.get("end_date"))
 
-    tanks = Tank.objects.select_related("product")
+    tanks = Tank.objects.inventory_tracked().select_related("product")
     tank_rows = [
         {
             "tank": tank,
@@ -127,12 +129,12 @@ def purchase_entry(request, date, tank_id):
         messages.error(request, reason)
         return redirect("purchases:choose_date")
 
-    tank = get_object_or_404(Tank, pk=tank_id)
+    tank = get_object_or_404(Tank.objects.inventory_tracked(), pk=tank_id)
 
     # Rate suggestion: most recently used rate for this PRODUCT (via this
     # tank, since each tank has exactly one product) -- rules 5 and 6.
-    # Regular and CNG are naturally independent here because each is a
-    # separate Tank row; nothing shares a rate across products.
+    # Each product is a separate Tank row; nothing shares a rate across
+    # products. (CNG has no purchases, so it never reaches this view.)
     suggested_rate = purchase_services.get_most_recent_rate(tank)
     initial = {"purchase_rate": suggested_rate} if suggested_rate is not None else {}
 

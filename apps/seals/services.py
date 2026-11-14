@@ -3,9 +3,17 @@ Seal queries shared by the on-screen list and its PDF, so both always show the
 same records in the same order.
 """
 
+from apps.stations.models import Nozzle
 from apps.stations.ordering import nozzle_order
 
 from .models import NozzleSeal
+
+
+def sealable_seals():
+    """Every seal record that belongs in «پلمپ ها»: seals of CNG nozzles
+    (which have none in this station) are never listed, printed, edited
+    or deleted through the section."""
+    return NozzleSeal.objects.filter(nozzle__in=Nozzle.objects.sealable())
 
 
 def seals_in_range(start_date, end_date):
@@ -23,7 +31,7 @@ def seals_in_range(start_date, end_date):
     Read-only; no stored data is changed.
     """
     return (
-        NozzleSeal.objects.select_related("nozzle__tank__product")
+        sealable_seals().select_related("nozzle__tank__product")
         .filter(date__gte=start_date, date__lte=end_date)
         .order_by(*nozzle_order("nozzle__"), "-date", "-id")
     )

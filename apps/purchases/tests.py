@@ -164,25 +164,23 @@ class PurchaseWorkflowHttpTests(_TestCase):
         self.assertContains(resp, "1234")
 
     # Rule 6: Regular and CNG rate suggestions are fully independent.
-    def test_regular_and_super_rate_suggestions_independent(self):
+    def test_regular_rate_suggestion_follows_the_most_recent_purchase(self):
         self.client.post(
             f"/purchases/{self.date}/tank/{self.regular_tank.id}/new/",
             {"quantity": 100, "purchase_rate": "1200"},
         )
         self.client.post(
-            f"/purchases/{self.date}/tank/{self.super_tank.id}/new/",
-            {"quantity": 100, "purchase_rate": "1500"},
-        )
-        # Changing Regular's most recent rate...
-        self.client.post(
             f"/purchases/{self.date}/tank/{self.regular_tank.id}/new/",
             {"quantity": 50, "purchase_rate": "1800"},
         )
-        # ...must not affect CNG's suggested rate.
-        super_suggestion = services.get_most_recent_rate(self.super_tank)
-        self.assertEqual(super_suggestion, Decimal("1500"))
-        regular_suggestion = services.get_most_recent_rate(self.regular_tank)
-        self.assertEqual(regular_suggestion, Decimal("1800"))
+        self.assertEqual(services.get_most_recent_rate(self.regular_tank), Decimal("1800"))
+
+    def test_cng_tank_has_no_purchase_entry_form(self):
+        url = f"/purchases/{self.date}/tank/{self.super_tank.id}/new/"
+        self.assertEqual(self.client.get(url).status_code, 404)
+        resp = self.client.post(url, {"quantity": 100, "purchase_rate": "1500"})
+        self.assertEqual(resp.status_code, 404)
+        self.assertFalse(PurchaseInvoice.objects.filter(tank=self.super_tank).exists())
 
     # Rule 8: purchases are optional and never block day completion.
     def test_day_with_no_purchases_can_still_be_closed(self):
@@ -403,13 +401,14 @@ class PurchasesRangeViewTests(_TestCase):
         resp = self.client.get("/")
         self.assertContains(resp, 'href="/purchases/"')
 
-    def test_range_view_shows_both_product_tables(self):
+    def test_range_view_shows_only_the_regular_table_never_cng(self):
         resp = self.client.get("/purchases/")
         self.assertEqual(resp.status_code, 200)
-        # Persian display labels (see apps/core/display.py) -- stored
-        # Product.name values are still "Regular"/"CNG".
+        # Persian display label (see apps/core/display.py) -- the stored
+        # Product.name is still "Regular". CNG has no purchases.
         self.assertContains(resp, "بنزین معمولی")
-        self.assertContains(resp, "CNG")
+        self.assertNotContains(resp, "CNG")
+        self.assertEqual([r["tank"] for r in resp.context["tank_rows"]], [self.regular_tank])
 
     def test_range_view_has_exactly_the_six_required_columns_in_order(self):
         working_day = DailyWorkingDay.objects.create(date=datetime.date(2026, 8, 1))
@@ -459,7 +458,8 @@ class PurchasesRangeViewTests(_TestCase):
         resp = self.client.get("/purchases/?start_date=2026-08-01&end_date=2026-08-10")
         self.assertNotContains(resp, "99999")
 
-    def test_regular_and_super_purchases_stay_in_separate_tables(self):
+    def test_purchases_of_a_cng_tank_never_appear(self):
+        """Even stray data on the CNG tank (the UI can't create any) is not listed."""
         wd = DailyWorkingDay.objects.create(date=datetime.date(2026, 8, 1))
         PurchaseInvoice.objects.create(
             working_day=wd, tank=self.regular_tank, quantity=1111, purchase_rate=Decimal("1000"),
@@ -469,10 +469,8 @@ class PurchasesRangeViewTests(_TestCase):
         )
         resp = self.client.get("/purchases/?start_date=2026-08-01&end_date=2026-08-01")
         content = resp.content.decode()
-        # Both rows appear, and the Regular quantity appears before the
-        # CNG quantity, matching the tank ordering (product__name).
         self.assertIn("1,111", content)
-        self.assertIn("2,222", content)
+        self.assertNotIn("2,222", content)
 
     def test_print_button_links_to_the_combined_pdf_endpoint(self):
         resp = self.client.get("/purchases/?start_date=2026-08-01&end_date=2026-08-10")

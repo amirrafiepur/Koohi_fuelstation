@@ -44,9 +44,10 @@ class StatementServiceTests(TestCase):
 
     def test_always_one_row_per_tank_even_with_no_data(self):
         rows = build_statement_rows(1405, 5)
-        self.assertEqual(len(rows), 2)
+        # One row per inventory-tracked tank: CNG has no inventory, so it never appears.
+        self.assertEqual(len(rows), 1)
         products = {row["product"].name for row in rows}
-        self.assertEqual(products, {"بنزین معمولی", "CNG"})
+        self.assertEqual(products, {"بنزین معمولی"})
 
     def test_main_table_totals_match_petroleum_inventory_monthly(self):
         wd1 = self._wd()

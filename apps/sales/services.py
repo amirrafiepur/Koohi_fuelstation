@@ -8,7 +8,8 @@ belongs.
 from decimal import Decimal
 
 from .models import SalesInvoice, NozzleSale
-from apps.stations.models import Nozzle, Tank
+from apps.stations.models import Nozzle, Product, Tank
+from apps.stations.ordering import PRODUCT_DISPLAY_ORDER
 
 
 def get_or_create_sales_invoice(working_day, operator):
@@ -43,10 +44,36 @@ def get_product_sales(tank: Tank, working_day) -> Decimal:
     return sum((sale.mechanical_sales for sale in qs), Decimal("0"))
 
 
-def get_daily_totals(working_day) -> dict:
+def get_invoice_products() -> list[Product]:
+    """The products that have nozzles -- the choices of the product
+    switch on the daily sales invoice view/PDF -- in display order
+    (Regular, then CNG)."""
+    products = list(Product.objects.filter(tanks__nozzles__isnull=False).distinct())
+
+    def rank(product):
+        known = PRODUCT_DISPLAY_ORDER
+        return (known.index(product.name) if product.name in known else len(known), product.name)
+
+    return sorted(products, key=rank)
+
+
+def resolve_invoice_product(products: list[Product], requested_name) -> Product | None:
+    """The product selected by the `?product=<Product.name>` parameter of
+    the invoice view/PDF; an absent or unknown value falls back to the
+    first product (Regular). The view and the PDF both use this, so the
+    PDF always follows exactly what the table shows."""
+    for product in products:
+        if product.name == requested_name:
+            return product
+    return products[0] if products else None
+
+
+def get_daily_totals(working_day, product=None) -> dict:
     """Aggregate totals for the daily SalesInvoice view: total operation,
     total tests, total sales, total amount -- all derived from NozzleSale
-    rows, never stored."""
+    rows, never stored. With `product`, only that product's nozzles are
+    totalled (the per-product invoice view and PDF); without it, every
+    nozzle (the day-list view)."""
     try:
         invoice = SalesInvoice.objects.get(working_day=working_day)
     except SalesInvoice.DoesNotExist:
@@ -58,7 +85,10 @@ def get_daily_totals(working_day) -> dict:
             "total_amount": Decimal("0"),
         }
 
-    sales = list(invoice.nozzle_sales.all())
+    nozzle_sales = invoice.nozzle_sales.all()
+    if product is not None:
+        nozzle_sales = nozzle_sales.filter(nozzle__tank__product=product)
+    sales = list(nozzle_sales)
     return {
         "nozzle_count": len(sales),
         "total_operation": sum((s.operation for s in sales), Decimal("0")),

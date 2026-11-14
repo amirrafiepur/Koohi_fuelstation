@@ -46,13 +46,11 @@ class SealOrderingBase(TestCase):
         License.objects.create(start_date=datetime.date(2026, 8, 1), duration_days=365)
         station = Station.objects.create(name="S", province="P", city="C")
         tank = Tank.objects.create(station=station, product=Product.objects.create(name="Regular"), capacity=50000)
-        cng_tank = Tank.objects.create(station=station, product=Product.objects.create(name="CNG"), capacity=0)
-        # Regular nozzles are keyed by their number (1..14), CNG nozzles by "CNG n" (CNG 1..4).
+        # Seals exist for the 14 regular petrol nozzles only (CNG has none).
         self.nozzles = {n: Nozzle.objects.create(tank=tank, number=n) for n in range(1, 15)}
-        self.nozzles.update({f"CNG {n}": Nozzle.objects.create(tank=cng_tank, number=n) for n in range(1, 5)})
         self.client.login(username="op1", password="testpass123")
         for number, day, label in (
-            (14, 5, "14a"), (1, 1, "1a"), ("CNG 3", 3, "c3a"), (2, 2, "2a"),
+            (14, 5, "14a"), (1, 1, "1a"), (13, 3, "c3a"), (2, 2, "2a"),
             (1, 4, "1b"), (10, 1, "10a"), (2, 2, "2b"),           # 2b: same date as 2a, registered later
         ):
             self.add(number, day, label)
@@ -77,13 +75,13 @@ class SealOrderingBase(TestCase):
 
 class OrderingTests(SealOrderingBase):
     def test_nozzles_ascending_then_newest_first(self):
-        self.assertEqual(self.labels(self.screen_order()), ["1b", "1a", "2b", "2a", "10a", "14a", "c3a"])
+        self.assertEqual(self.labels(self.screen_order()), ["1b", "1a", "2b", "2a", "10a", "c3a", "14a"])
 
     def test_numeric_not_text_order_of_nozzle_numbers(self):
         nozzles = [n for n, _ in self.screen_order()]
         self.assertEqual(nozzles, sorted(nozzles, key=nozzle_rank))
         self.assertLess(nozzles.index("2"), nozzles.index("10"))                # 2 before 10, not "10" before "2"
-        self.assertEqual(nozzles[-1], "CNG 3")                                  # CNG always after every regular nozzle
+        self.assertEqual(nozzles[-1], "14")                                     # the highest nozzle number comes last
 
     def test_pdf_has_exactly_the_same_order_as_the_screen(self):
         self.assertEqual(self.pdf_order(), self.screen_order())
@@ -91,7 +89,7 @@ class OrderingTests(SealOrderingBase):
     def test_new_seal_for_a_late_nozzle_does_not_jump_ahead(self):
         self.add(14, 20, "14b")                     # newest of all, but nozzle 14
         order = self.labels(self.screen_order())
-        self.assertEqual(order, ["1b", "1a", "2b", "2a", "10a", "14b", "14a", "c3a"])
+        self.assertEqual(order, ["1b", "1a", "2b", "2a", "10a", "c3a", "14b", "14a"])
         self.assertEqual(order[:5], ["1b", "1a", "2b", "2a", "10a"])            # nozzles 1-13 untouched
         self.assertEqual(self.labels(self.pdf_order()), order)
 
@@ -99,7 +97,7 @@ class OrderingTests(SealOrderingBase):
         self.add(1, 10, "1c")
         order = self.labels(self.screen_order())
         self.assertEqual(order[:3], ["1c", "1b", "1a"])
-        self.assertEqual(order, ["1c", "1b", "1a", "2b", "2a", "10a", "14a", "c3a"])
+        self.assertEqual(order, ["1c", "1b", "1a", "2b", "2a", "10a", "c3a", "14a"])
         self.assertEqual(self.labels(self.pdf_order()), order)
 
     def test_same_date_newest_registration_first(self):
@@ -113,7 +111,7 @@ class OrderingTests(SealOrderingBase):
         self.assertEqual(self.labels(self.screen_order())[:4], ["1b", "1z", "1a", "1old"])
 
     def test_inserting_for_many_nozzles_keeps_the_grouping(self):
-        for number in ("CNG 3", 3, 14, 1, "CNG 2", 7, 14, 1):
+        for number in (13, 3, 14, 1, 12, 7, 14, 1):
             self.add(number, 12, f"x{number}-{NozzleSeal.objects.count()}")
         nozzles = [n for n, _ in self.screen_order()]
         self.assertEqual(nozzles, sorted(nozzles, key=nozzle_rank))
@@ -129,7 +127,7 @@ class OrderingTests(SealOrderingBase):
         register(14, datetime.date(2026, 8, 25))
         register(1, datetime.date(2026, 8, 26))
         order = self.labels(self.screen_order())
-        self.assertEqual(order, ["new1", "1b", "1a", "2b", "2a", "10a", "new14", "14a", "c3a"])
+        self.assertEqual(order, ["new1", "1b", "1a", "2b", "2a", "10a", "c3a", "new14", "14a"])
         self.assertEqual(self.labels(self.pdf_order()), order)
 
 

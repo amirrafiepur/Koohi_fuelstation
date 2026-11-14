@@ -8,7 +8,7 @@
  * page (its real inline scripts) is driven with real KeyboardEvents;
  * layout/scrolling is modelled by _dom.js.
  */
-const { VIEWPORT, ROW_H, TABLE_TOP, load, key } = require('./_dom');
+const { VIEWPORT, ROW_H, TABLE_TOP, load, key, MARGIN } = require('./_dom');
 
 const ROWS = '#all-nozzles-table tbody tr';
 const selectedRows = (p) => Array.from(p.doc.querySelectorAll(ROWS + '.row-selected'));
@@ -71,7 +71,7 @@ try {
     if (selectedIndex(p) !== i || !inViewport(p)) allVisible = false;
   }
   check('scroll: selected row stays inside the viewport on every step down (all rows)', allVisible);
-  const needsScroll = TABLE_TOP + rows * ROW_H > VIEWPORT;      // a short table (e.g. 6 CNG nozzles) fits on screen
+  const needsScroll = TABLE_TOP + rows * ROW_H > VIEWPORT;      // a short table (e.g. 4 CNG nozzles) fits on screen
   if (needsScroll) check('scroll: the page really scrolled to follow the selection', p.window.__scrollY > y0);
   check('scroll: scrolling requested with block "nearest" on the selected row',
     p.window.__scrollCalls.length > 0 &&
@@ -87,7 +87,11 @@ try {
     if (selectedIndex(p) !== i || !inViewport(p)) allVisible = false;
   }
   check('scroll: selected row stays inside the viewport on every step up', allVisible);
-  if (needsScroll) check('scroll: the page scrolled back up', p.window.__scrollY < yBottom);
+  // Going back up only needs to scroll if the first row would otherwise sit above the safe margin:
+  // a table just taller than the viewport (e.g. 14 regular nozzles) scrolls down a little, but the first
+  // row is still visible from that position, so no upward scroll is expected (or needed).
+  const needsScrollUp = yBottom > TABLE_TOP - MARGIN;
+  if (needsScrollUp) check('scroll: the page scrolled back up', p.window.__scrollY < yBottom);
 
   // ---- Enter again exits
   key(p, 'ArrowDown'); key(p, 'ArrowDown');

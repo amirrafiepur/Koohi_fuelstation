@@ -138,14 +138,14 @@ class ScreenCounterTests(CounterBase):
         regular = {r[0]: r for r in table_rows(self.page(7, "Regular"))}
         self.assertEqual(regular["3"][3:], ["795", "5", "800"])
         sup = {r[0]: r for r in table_rows(self.page(7, "CNG"))}
-        self.assertEqual(sup["CNG 2"][3:], ["80", "0", "80"])
+        self.assertEqual(sup["CNG 2"][3:], ["80", "80"])                  # CNG: sales | operation (no test cell)
 
     def test_total_amount_is_gone_from_the_table_but_the_summary_keeps_it_per_fuel(self):
         for fuel in ("Regular", "CNG"):
             html = self.page(7, fuel)
             head = html.split('id="all-nozzles-table"', 1)[1].split("</thead>", 1)[0]
             self.assertNotIn("جمع مبلغ کل", head)
-            self.assertEqual(len(table_rows(html)[0]), 6)
+            self.assertEqual(len(table_rows(html)[0]), 6 if fuel == "Regular" else 5)   # CNG has no test cell
             self.assertIn("مجموع مبلغ کل", html.split('id="all-nozzles-totals"', 1)[1].split("</div>\n  </div>", 1)[0])
             self.assertEqual(screen_totals(html), tuple(fmt(x) for x in TOTALS_07[fuel]))
 
@@ -168,8 +168,7 @@ class PdfCounterTests(CounterBase):
             self.assertIn("مجموع مبلغ کل", summary)
             self.assertNotIn("جمع مبلغ کل", main)
             head = main.split("<thead>", 1)[1].split("</thead>", 1)[0]
-            self.assertEqual(re.findall(r"<th[^>]*>([^<]*)</th>", head),
-                             ["شماره نازل", "کنتور اول ماه", "کنتور آخر ماه", "جمع فروش مکانیکی", "جمع آزمایش", "جمع کارکرد"])
+            self.assertEqual(re.findall(r"<th[^>]*>([^<]*)</th>", head), ["شماره نازل", "کنتور اول ماه", "کنتور آخر ماه", "جمع فروش مکانیکی", "جمع آزمایش", "جمع کارکرد"] if fuel == "Regular" else ["شماره نازل", "کنتور اول ماه", "کنتور آخر ماه", "جمع فروش مکانیکی", "جمع کارکرد"])
             self.assertEqual(pdf_summary(html), tuple(fmt(x) for x in TOTALS_07[fuel]))
 
     def test_pdf_example_values_and_file_text(self):

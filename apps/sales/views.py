@@ -9,6 +9,7 @@ sales/services.py and workday/services.py.
 """
 
 import datetime
+from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -82,19 +83,29 @@ def invoice_detail(request, date):
 
     workday_services.set_global_date(request, working_day.date)
 
+    # Display only: the invoice is shown (and printed) one product at a
+    # time -- ?product=Regular (default) or ?product=CNG. Data entry is
+    # untouched and stays one sequential flow over all nozzles.
+    products = sales_services.get_invoice_products()
+    selected_product = sales_services.resolve_invoice_product(products, request.GET.get("product"))
+
     invoice = SalesInvoice.objects.filter(working_day=working_day).first()
     nozzle_sales = (
-        invoice.nozzle_sales.select_related("nozzle", "nozzle__tank__product").order_by(*nozzle_order("nozzle__"))
+        invoice.nozzle_sales.filter(nozzle__tank__product=selected_product)
+        .select_related("nozzle", "nozzle__tank__product").order_by(*nozzle_order("nozzle__"))
         if invoice
         else NozzleSale.objects.none()
     )
 
     all_registered, missing_nozzles = sales_services.validate_all_nozzles_registered(working_day)
-    totals = sales_services.get_daily_totals(working_day)
+    totals = sales_services.get_daily_totals(working_day, product=selected_product)
 
     context = {
         "working_day": working_day,
         "invoice": invoice,
+        "products": products,
+        "selected_product": selected_product,
+        "show_test": selected_product is None or selected_product.has_test_field,
         "nozzle_sales": nozzle_sales,
         "all_registered": all_registered,
         "missing_nozzles": missing_nozzles,
@@ -142,7 +153,7 @@ def nozzle_entry(request, date, nozzle_id=None):
     confirm_negative = request.POST.get("confirm_negative_meter") == "1"
 
     if request.method == "POST":
-        form = NozzleSaleForm(request.POST, instance=existing)
+        form = NozzleSaleForm(request.POST, instance=existing, nozzle=nozzle)
         if form.is_valid():
             if form.has_negative_meter_movement() and not confirm_negative:
                 # Non-blocking warning: re-render with the warning instead
@@ -170,9 +181,14 @@ def nozzle_entry(request, date, nozzle_id=None):
             # for any other reader of it).
             workday_services.close_day(working_day.date)
             messages.success(request, "تمام نازل‌های الزامی برای این روز ثبت شدند.")
+            # Returning from "ویرایش" on a product's table keeps that table.
+            if request.GET.get("product"):
+                return redirect(
+                    reverse("sales:invoice_detail", args=[date]) + "?" + urlencode({"product": request.GET["product"]})
+                )
             return redirect("sales:invoice_detail", date=date)
     else:
-        form = NozzleSaleForm(instance=existing, initial=initial)
+        form = NozzleSaleForm(instance=existing, initial=initial, nozzle=nozzle)
 
     context = {
         "form": form, "working_day": working_day, "nozzle": nozzle,
