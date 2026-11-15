@@ -7,17 +7,18 @@
   (The previous month's جمع کل رسیده is NOT carried forward.)
 
 Hand-worked data (Regular tank, opening 100,000; CNG tank, opening 50,000). Per day,
-    total = previous actual + purchases + test + previous overage
+    total = previous actual + purchases + test
     theoretical = total - (sales + test) = total - operation ; overage = max(actual - theoretical, 0)
     جمع روزانه‌ی رسیده = purchases + test + overage
 
  Regular   date        purchases  test  op    actual   overage  daily received  جمع کل رسیده
  month 05  07-24 (d1)   10,000     10  1,000  109,020    10        10,020       100,000 + 10,020 = 110,020   (opening)
-           07-25 (d2)        0      5    500  108,560    25            30       110,050
- month 06  08-25 (d3)    8,000      0    700  115,890     5         8,005       108,560 (d2 actual) + 8,005 = 116,565   <- 1st working day (not 08-23)
-           08-26 (d4)        0     20    320  115,620    25            45       116,610
- month 07  09-28 (d5)    5,000      0    400  120,230     0         5,000       115,620 (d4 actual) + 5,000 = 120,620
-           09-29 (d6)  1,000+500    2    102  121,639     9         1,511       122,131
+           07-25 (d2)        0      5    500  108,550    25            30       110,050
+ month 06  08-25 (d3)    8,000      0    700  115,855     5         8,005       108,550 (d2 actual) + 8,005 = 116,555   <- 1st working day (not 08-23)
+           08-26 (d4)        0     20    320  115,580    25            45       116,600
+ month 07  09-28 (d5)    5,000      0    400  120,180     0         5,000       115,580 (d4 actual) + 5,000 = 120,580
+           09-29 (d6)  1,000+500    2    102  121,589     9         1,511       122,091
+ (each actual = previous actual + purchases - sales + that day's overage: a day's overage is never carried forward)
  CNG     07-24 (d1)    2,000      0    300   51,700     0         2,000       50,000 + 2,000 = 52,000
            08-25 (d3)    1,000      0    100   52,600     0         1,000       51,700 (d1 actual) + 1,000 = 52,700
 """
@@ -47,7 +48,7 @@ D = Decimal
 d = datetime.date
 
 D1, D2, D3, D4, D5, D6 = d(2026, 7, 24), d(2026, 7, 25), d(2026, 8, 25), d(2026, 8, 26), d(2026, 9, 28), d(2026, 9, 29)
-REGULAR_CUMULATIVE = {D1: 110020, D2: 110050, D3: 116565, D4: 116610, D5: 120620, D6: 122131}
+REGULAR_CUMULATIVE = {D1: 110020, D2: 110050, D3: 116555, D4: 116600, D5: 120580, D6: 122091}
 REGULAR_DAILY = {D1: 10020, D2: 30, D3: 8005, D4: 45, D5: 5000, D6: 1511}
 MONTH_DAYS = {5: [D1, D2], 6: [D3, D4], 7: [D5, D6]}
 
@@ -67,11 +68,11 @@ class CarryForwardBase(TestCase):
         # (day, nozzle, previous, new, test, purchases, actual inventory)
         for day, number, prev, new, test, purchases, actual, tank in (
             (D1, 1, 0, 1000, 10, [10000], "109020", self.regular),
-            (D2, 1, 1000, 1500, 5, [], "108560", self.regular),
-            (D3, 1, 1500, 2200, 0, [8000], "115890", self.regular),
-            (D4, 1, 2200, 2520, 20, [], "115620", self.regular),
-            (D5, 1, 2520, 2920, 0, [5000], "120230", self.regular),
-            (D6, 1, 2920, 3022, 2, [1000, 500], "121639", self.regular),
+            (D2, 1, 1000, 1500, 5, [], "108550", self.regular),
+            (D3, 1, 1500, 2200, 0, [8000], "115855", self.regular),
+            (D4, 1, 2200, 2520, 20, [], "115580", self.regular),
+            (D5, 1, 2520, 2920, 0, [5000], "120180", self.regular),
+            (D6, 1, 2920, 3022, 2, [1000, 500], "121589", self.regular),
             (D1, 1, 0, 300, 0, [2000], "51700", self.super),
             (D3, 1, 300, 400, 0, [1000], "52600", self.super),
         ):
@@ -118,18 +119,18 @@ class MonthRuleTests(CarryForwardBase):
     def test_second_month_starts_from_the_previous_months_last_actual_inventory(self):
         rows = self.month(self.regular, 6)
         self.assertEqual(rows[0]["date"], D3)                       # first working day, not the month's 1st calendar day (08-23)
-        self.assertEqual({k: int(v) for k, v in self.cumulative(rows).items()}, {D3: 116565, D4: 116610})
+        self.assertEqual({k: int(v) for k, v in self.cumulative(rows).items()}, {D3: 116555, D4: 116600})
         # the rule, literally: previous month's final موجودی واقعی + that day's daily received
         self.assertEqual(self.cumulative(rows)[D3], self.last_actual(self.regular, D2) + self.daily(rows)[D3])
-        self.assertEqual(self.cumulative(rows)[D3], D(108560) + D(8005))
+        self.assertEqual(self.cumulative(rows)[D3], D(108550) + D(8005))
         # and NOT the previous month's جمع کل رسیده
         self.assertNotEqual(self.cumulative(rows)[D3], self.cumulative(self.month(self.regular, 5))[D2] + self.daily(rows)[D3])
 
     def test_third_consecutive_month_chains_on_the_second(self):
         rows = self.month(self.regular, 7)
-        self.assertEqual({k: int(v) for k, v in self.cumulative(rows).items()}, {D5: 120620, D6: 122131})
+        self.assertEqual({k: int(v) for k, v in self.cumulative(rows).items()}, {D5: 120580, D6: 122091})
         self.assertEqual(self.cumulative(rows)[D5], self.last_actual(self.regular, D4) + self.daily(rows)[D5])
-        self.assertEqual(self.cumulative(rows)[D5], D(115620) + D(5000))
+        self.assertEqual(self.cumulative(rows)[D5], D(115580) + D(5000))
         self.assertEqual(self.daily(rows)[D6], D(1511))             # two purchases that day + test + overage
 
     def test_opening_balance_only_seeds_the_first_month(self):
@@ -151,27 +152,27 @@ class MonthRuleTests(CarryForwardBase):
 
     def test_a_two_month_range_is_continuous(self):
         rows = self.ledger(self.regular, jalali_month_bounds(1405, 5)[0], jalali_month_bounds(1405, 6)[1])
-        self.assertEqual({k: int(v) for k, v in self.cumulative(rows).items()}, {D1: 110020, D2: 110050, D3: 116565, D4: 116610})
+        self.assertEqual({k: int(v) for k, v in self.cumulative(rows).items()}, {D1: 110020, D2: 110050, D3: 116555, D4: 116600})
 
     def test_each_tank_carries_its_own_total(self):
         super_05 = self.cumulative(self.month(self.super, 5))
         super_06 = self.cumulative(self.month(self.super, 6))
         self.assertEqual({k: int(v) for k, v in super_05.items()}, {D1: 52000})             # 50,000 (opening) + 2,000
         self.assertEqual({k: int(v) for k, v in super_06.items()}, {D3: 52700})             # 51,700 (month 5 last actual) + 1,000
-        self.assertEqual(self.cumulative(self.month(self.regular, 6))[D3], D(116565))        # Regular unaffected by CNG
+        self.assertEqual(self.cumulative(self.month(self.regular, 6))[D3], D(116555))        # Regular unaffected by CNG
 
     def test_first_working_day_without_an_inventory_entry_carries_into_the_next_recorded_day(self):
         TankInventory.objects.filter(tank=self.regular, working_day__date=D3).delete()
         rows = self.month(self.regular, 6)
-        # d4 now follows d2: total 108,560+0+20+25 = 108,605; theoretical 108,285; actual 115,620 -> overage 7,335;
-        # daily received 20+7,335 = 7,355; previous month's last actual 108,560 -> 115,915.
-        self.assertEqual({k: int(v) for k, v in self.cumulative(rows).items()}, {D4: 115915})
+        # d4 now follows d2: total 108,550+0+20 = 108,570; theoretical 108,570-320 = 108,250; actual 115,580 -> overage 7,330;
+        # daily received 20+7,330 = 7,350; previous month's last actual 108,550 -> 115,900.
+        self.assertEqual({k: int(v) for k, v in self.cumulative(rows).items()}, {D4: 115900})
 
     def test_range_starting_mid_month_keeps_the_existing_convention(self):
         """Range starting mid-month: unchanged -- starts from that day's own total; the next month's
         first working day (d5) still follows the month rule (previous month's last actual + daily received)."""
         rows = self.ledger(self.regular, D4, D6)
-        self.assertEqual({k: int(v) for k, v in self.cumulative(rows).items()}, {D4: 45, D5: 120620, D6: 122131})
+        self.assertEqual({k: int(v) for k, v in self.cumulative(rows).items()}, {D4: 45, D5: 120580, D6: 122091})
 
     def test_dispatched_total_and_other_columns_are_untouched(self):
         rows = self.month(self.regular, 6)
@@ -179,7 +180,7 @@ class MonthRuleTests(CarryForwardBase):
         self.assertEqual(first["daily_dispatched"], first["cumulative_dispatched"])        # still not carried forward
         self.assertEqual(first["daily_dispatched"], D(700))                                # sales 700 + test 0 + shortage 0
         self.assertEqual((first["daily_purchase"], first["daily_sales"], first["actual_inventory"], first["overage"]),
-                         (D(8000), D(700), D("115890"), D(5)))
+                         (D(8000), D(700), D("115855"), D(5)))
 
 
 class PreviousActualHelperTests(CarryForwardBase):
@@ -202,14 +203,14 @@ class ScreenPdfAndMonthlyTests(CarryForwardBase):
         return f"tank_id={self.regular.id}&start_date={first.isoformat()}&end_date={last.isoformat()}"
 
     def test_screen_shows_the_carried_forward_totals(self):
-        for month, expected in ((5, [110020, 110050]), (6, [116565, 116610]), (7, [120620, 122131])):
+        for month, expected in ((5, [110020, 110050]), (6, [116555, 116600]), (7, [120580, 122091])):
             html = self.client.get(f"/reports/petroleum-ledger/?{self.url(month)}").content.decode()
             cells = numeric_cells(html)
             for value in expected:
                 self.assertIn(f"{value:,}", cells, (month, value))
 
     def test_pdf_shows_the_same_totals(self):
-        for month, expected in ((5, [110020, 110050]), (6, [116565, 116610]), (7, [120620, 122131])):
+        for month, expected in ((5, [110020, 110050]), (6, [116555, 116600]), (7, [120580, 122091])):
             first, last = jalali_month_bounds(1405, month)
             resp, html = render_pdf_with_html(
                 self.client, f"/print/petroleum-ledger/{self.regular.id}/?start_date={first}&end_date={last}")
@@ -222,7 +223,7 @@ class ScreenPdfAndMonthlyTests(CarryForwardBase):
 
     def test_monthly_tank_report_follows_the_same_totals(self):
         """گزارش ماهانه مخازن reuses the ledger's cumulative total verbatim, so it carries forward too."""
-        for month, expected in ((5, 110050), (6, 116610), (7, 122131)):
+        for month, expected in ((5, 110050), (6, 116600), (7, 122091)):
             row = report_services.petroleum_inventory_monthly(self.regular, 1405, month)
             self.assertEqual(row["total_received"], D(expected), month)
 

@@ -8,18 +8,19 @@ and (c) the PDF's summary row.
 
 Day-by-day fixture (Regular tank, opening inventory 100,000). Theoretical inventory is
 total - (sales + test) -- the test liters go back into the tank -- so each actual below is the
-perfect-day figure for that day (carried-over liters included) plus the intended سرک/کسری:
+perfect-day figure for that day plus the intended سرک/کسری. A day's سرک is never carried into the
+next day (total = previous ACTUAL + purchases + test):
   d1: total 115,010, theoretical 112,010 -> actual 112,510 = +500 (سرک)
-  d2: total 121,015 (112,510 + 8,000 + 5 + 500), theoretical 118,515 -> actual 117,985 = -530 (کسری)
-  d3: total 117,985, theoretical 116,785 -> actual 116,785 = 0
-  d4: total 136,805 (116,785 + 20,000 + 20), theoretical 134,505 -> actual 134,805 = +300 (سرک)
+  d2: total 120,515 (112,510 + 8,000 + 5), theoretical 118,015 -> actual 117,485 = -530 (کسری)
+  d3: total 117,485, theoretical 116,285 -> actual 116,285 = 0
+  d4: total 136,305 (116,285 + 20,000 + 20), theoretical 134,005 -> actual 134,305 = +300 (سرک)
 
 
  day  purchases        meters        test  sales  actual   -> سرک / کسری
  08-01 10,000 + 5,000  0 -> 3,000     10   2,990  112,510     سرک 500
- 08-02  8,000          3,000 -> 5,500   5   2,495  117,985     کسری 530
- 08-03  --             5,500 -> 6,700   0   1,200  116,785     0 / 0
- 08-04 20,000          6,700 -> 9,000  20   2,280  134,805     سرک 300
+ 08-02  8,000          3,000 -> 5,500   5   2,495  117,485     کسری 530
+ 08-03  --             5,500 -> 6,700   0   1,200  116,285     0 / 0
+ 08-04 20,000          6,700 -> 9,000  20   2,280  134,305     سرک 300
  08-05  --             9,000 -> 9,500   5     495  (not entered)  blank
 
  whole range: خرید 43,000 | سرک 800 | آزمایش 40 | فروش 9,460 | کسری 530
@@ -89,9 +90,9 @@ class LedgerTotalsTests(TestCase):
         days = [
             # date, purchases, prev, new, test, actual
             (1, [10000, 5000], 0, 3000, 10, "112510"),
-            (2, [8000], 3000, 5500, 5, "117985"),
-            (3, [], 5500, 6700, 0, "116785"),
-            (4, [20000], 6700, 9000, 20, "134805"),
+            (2, [8000], 3000, 5500, 5, "117485"),
+            (3, [], 5500, 6700, 0, "116285"),
+            (4, [20000], 6700, 9000, 20, "134305"),
             (5, [], 9000, 9500, 5, None),
         ]
         for day, purchases, prev, new, test, actual in days:

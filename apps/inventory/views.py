@@ -187,13 +187,11 @@ def actual_inventory_entry(request, date, tank_id):
     tank = get_object_or_404(Tank.objects.inventory_tracked(), pk=tank_id)
     existing = TankInventory.objects.filter(tank=tank, working_day=working_day).first()
 
-    previous_balance, previous_overage = inventory_services.get_previous_balance_and_overage(
-        tank, working_day
-    )
+    previous_balance = inventory_services.get_previous_balance(tank, working_day)
     daily_purchase = inventory_services.get_daily_purchase_total(tank, working_day)
     test_return = inventory_services.get_test_return(tank, working_day)
     daily_sales = inventory_services.get_daily_sales(tank, working_day)
-    total_inventory = previous_balance + daily_purchase + test_return + previous_overage
+    total_inventory = previous_balance + daily_purchase + test_return
     theoretical_inventory = inventory_services.compute_theoretical_inventory(
         total_inventory, daily_sales, test_return
     )

@@ -4,7 +4,7 @@
 The test liters leave the nozzle through the meter and go BACK into the tank, so
 
     operation (meter)        = mechanical sales + test
-    total inventory (جمع کل)  = previous actual + purchases + test + previous overage
+    total inventory (جمع کل)  = previous actual + purchases + test
     theoretical inventory    = total - (mechanical sales + test)          [= total - operation]
     shortage / overage       = theoretical vs. actual
 
@@ -186,13 +186,14 @@ class MultiDayAndLedgerExamples(TestLitersBase):
             self.assertNotIn("2,520", cells)                               # old cumulative (2,350 + 170 inflated shortage)
         self.assertIn("2,350", pdf_text(resp.content))
 
-    def test_overage_is_carried_into_the_next_day_instead_of_being_lost(self):
-        """Test day with 40 extra liters, then a normal day. The 40 must carry into day 2's total."""
+    def test_overage_is_never_carried_into_the_next_day(self):
+        """Day 1 shows a سرک of 40. Day 2 starts from day 1's ACTUAL inventory only: a perfect day 2
+        shows no shortage -- the 40 must not be added again (that made a false کسری of 40)."""
         clear_days()
-        wd1 = self.day(DAY1, operation=1000, test=100, actual=99140)         # overage 40 (was shown as shortage 60)
-        wd2 = self.day(DAY2, operation=500, test=0, actual=98680)            # 99,140 + 40 carried - 500
+        wd1 = self.day(DAY1, operation=1000, test=100, actual=99140)         # overage 40
+        wd2 = self.day(DAY2, operation=500, test=0, actual=98640)            # 99,140 - 500: nothing lost
         self.assertEqual(self.compute(wd1)[2:], (D(0), D(40)))
-        self.assertEqual(self.compute(wd2), (D(99180), D(98680), D(0), D(0)))
+        self.assertEqual(self.compute(wd2), (D(99140), D(98640), D(0), D(0)))
 
     def test_viewing_changes_no_stored_data(self):
         def snapshot():

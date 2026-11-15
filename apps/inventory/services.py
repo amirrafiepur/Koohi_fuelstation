@@ -1,14 +1,18 @@
 """
 inventory/services.py -- tank inventory calculations.
 
-Circularity rule (see architecture doc §"IMPORTANT INVENTORY CIRCULARITY
-RULE"): a day's Overage/Shortage must NEVER feed into that same day's own
-Total Inventory. Only the PREVIOUS working day's Overage is used as an
-input. This day's own Overage becomes tomorrow's "Previous Overage".
+Carry-forward rule: a day's Total Inventory starts from the PREVIOUS
+working day's ACTUAL inventory (the physically measured quantity), plus
+this day's purchases and test return -- nothing else. A day's Overage
+(سرک) or Shortage (کسری) is a result of that day only and never feeds
+into any other day's Total Inventory, Theoretical Inventory, Shortage or
+Dispatched totals: the previous day's actual inventory already includes
+whatever it physically was, so adding yesterday's overage again would
+inflate today's shortage by exactly that amount.
 
 For day 1 of the first accounting month there is no previous working day,
 so Previous Balance comes from OpeningInventory (0 by default, or a
-user-supplied value) and Previous Overage is 0.
+user-supplied value).
 """
 
 import datetime
@@ -64,25 +68,21 @@ def _get_previous_working_day_inventory(tank, working_day):
     )
 
 
-def get_previous_balance_and_overage(tank, working_day):
+def get_previous_balance(tank, working_day) -> Decimal:
     """
-    Returns (previous_balance, previous_overage) as Decimals.
+    The Previous Balance (موجودی واقعی روز قبل) as a Decimal.
 
-    - If a previous TankInventory row exists for this tank: previous
-      balance = that row's actual_inventory; previous overage = that
-      row's own computed overage (recomputed on the fly from its own
-      stored actual_inventory vs. its own theoretical inventory -- never
-      stored redundantly).
+    - If a previous TankInventory row exists for this tank: that row's
+      actual_inventory. (Its overage/shortage plays no part -- see the
+      module docstring.)
     - Otherwise (this is day 1 of the first accounting month for this
-      tank): previous balance = OpeningInventory.opening_quantity for the
-      accounting start month (0 if none was supplied); previous overage
-      = 0.
+      tank): OpeningInventory.opening_quantity for the accounting start
+      month (0 if none was supplied).
     """
     previous_row = _get_previous_working_day_inventory(tank, working_day)
 
     if previous_row is not None:
-        _, _, _, prev_overage = compute_tank_inventory(tank, previous_row.working_day)
-        return previous_row.actual_inventory, prev_overage
+        return previous_row.actual_inventory
 
     accounting_start = workday_services.get_accounting_start_date()
     opening = None
@@ -91,8 +91,7 @@ def get_previous_balance_and_overage(tank, working_day):
             tank=tank, effective_month=accounting_start
         ).first()
 
-    previous_balance = opening.opening_quantity if opening else Decimal("0")
-    return previous_balance, Decimal("0")
+    return opening.opening_quantity if opening else Decimal("0")
 
 
 def compute_theoretical_inventory(total_inventory, daily_sales, test_return):
@@ -118,11 +117,11 @@ def compute_tank_inventory(tank, working_day):
     """
     Computes this working day's (total_inventory, theoretical_inventory,
     shortage, overage) for `tank`, where
-        total_inventory       = previous actual + purchases + test + previous overage
+        total_inventory       = previous actual + purchases + test
         theoretical_inventory = total_inventory - (mechanical sales + test)
     (see compute_theoretical_inventory() for why the test is subtracted), using only:
-      - the previous working day's carry-forward values (never this
-        day's own results), and
+      - the previous working day's ACTUAL inventory (never any overage or
+        shortage -- neither the previous day's nor this day's own), and
       - this day's own source data (purchases, tests, sales).
 
     Requires a TankInventory row to already exist for (tank, working_day)
@@ -140,15 +139,13 @@ def compute_tank_inventory(tank, working_day):
             "cannot compute derived inventory values."
         ) from exc
 
-    previous_balance, previous_overage = get_previous_balance_and_overage(
-        tank, working_day
-    )
+    previous_balance = get_previous_balance(tank, working_day)
 
     daily_purchase = get_daily_purchase_total(tank, working_day)
     test_return = get_test_return(tank, working_day)
     daily_sales = get_daily_sales(tank, working_day)
 
-    total_inventory = previous_balance + daily_purchase + test_return + previous_overage
+    total_inventory = previous_balance + daily_purchase + test_return
     theoretical_inventory = compute_theoretical_inventory(
         total_inventory, daily_sales, test_return
     )

@@ -92,19 +92,19 @@ class TankInventoryChainTests(TestCase):
         )
         self.assertEqual(overage1, Decimal("10"))
 
-        # Day 2: no purchase/sales either. Previous Balance = 10 (day1 actual),
-        # Previous Overage = 10 (day1's own overage, carried forward).
-        # Total = 10 + 0 + 0 + 10 = 20. If Actual = 20 -> Theoretical = 20 ->
-        # shortage=overage=0, proving day 2 did NOT use its own (zero) overage
-        # circularly but correctly carried day 1's.
+        # Day 2: no purchase/sales either. Previous Balance = 10 (day1 actual).
+        # Day 1's overage (سرک) must NOT be carried into day 2: Total = 10 + 0 + 0 = 10.
+        # If Actual = 10 (nothing moved, nothing lost) -> Theoretical = 10 ->
+        # shortage = overage = 0. (Carrying the 10 forward would have made the
+        # theoretical 20 and shown a false shortage of 10 on a perfect day.)
         TankInventory.objects.create(
-            working_day=self.day2, tank=self.tank, actual_inventory=Decimal("20")
+            working_day=self.day2, tank=self.tank, actual_inventory=Decimal("10")
         )
         total2, theoretical2, shortage2, overage2 = services.compute_tank_inventory(
             self.tank, self.day2
         )
-        self.assertEqual(total2, Decimal("20"))
-        self.assertEqual(theoretical2, Decimal("20"))
+        self.assertEqual(total2, Decimal("10"))
+        self.assertEqual(theoretical2, Decimal("10"))
         self.assertEqual(shortage2, Decimal("0"))
         self.assertEqual(overage2, Decimal("0"))
 
@@ -223,9 +223,9 @@ class InventoryWorkflowHttpTests(_TestCase):
         resp = self.client.get(f"/inventory/{self.day2}/")
         self.assertNotContains(resp, "موجودی افتتاحیه مخزن")
 
-    def test_day_two_uses_day_ones_actual_and_carried_overage_not_own(self):
-        # Mirrors the service-level circularity regression test, but
-        # exercised through the actual HTTP views end to end.
+    def test_day_two_uses_day_ones_actual_and_never_its_overage(self):
+        # Mirrors the service-level regression test, but exercised
+        # through the actual HTTP views end to end.
         self.client.post(
             f"/inventory/{self.day1}/tank/{self.tank.id}/opening/",
             {"opening_quantity": "0"},
@@ -236,12 +236,12 @@ class InventoryWorkflowHttpTests(_TestCase):
         )
         self.client.post(
             f"/inventory/{self.day2}/tank/{self.tank.id}/actual/",
-            {"actual_inventory": "20"},  # prev balance=10 + prev overage=10 = 20
+            {"actual_inventory": "10"},  # prev balance=10; day 1's overage is NOT carried -> total 10
         )
         total, theoretical, shortage, overage = services.compute_tank_inventory(
             self.tank, DailyWorkingDay.objects.get(date=self.day2)
         )
-        self.assertEqual(total, Decimal("20"))
+        self.assertEqual(total, Decimal("10"))
         self.assertEqual(shortage, Decimal("0"))
         self.assertEqual(overage, Decimal("0"))
 

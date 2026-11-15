@@ -327,7 +327,7 @@ def petroleum_inventory_operations_ledger(tank: Tank, start_date, end_date):
     first working day ever (no earlier TankInventory row exists for this
     tank at all), موجودی افتتاحیه is treated as "جمع کل رسیده of day
     zero" and carried in as the starting point -- reusing
-    inventory_services.get_previous_balance_and_overage()'s existing
+    inventory_services.get_previous_balance()'s existing
     OpeningInventory lookup (and its existing 0-default when none was
     supplied) verbatim, the same source already used for Total
     Inventory's own day-1 Previous Balance. A sub-range that starts later
@@ -425,7 +425,7 @@ def petroleum_inventory_operations_ledger(tank: Tank, start_date, end_date):
                     tank=tank, working_day__date__lt=wd.date
                 ).exists()
                 if is_tanks_first_working_day:
-                    opening_balance, _ = inventory_services.get_previous_balance_and_overage(tank, wd)
+                    opening_balance = inventory_services.get_previous_balance(tank, wd)
                     cumulative_received = opening_balance + daily_received
                 else:
                     cumulative_received = daily_received
