@@ -127,34 +127,8 @@ a { color: inherit; }
 
 .app-header__station {
   display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.app-header__station-text {
-  display: flex;
   flex-direction: column;
   gap: 0.1rem;
-  white-space: nowrap;
-}
-
-/* The logo is dark on transparent: it sits on a white rounded tile so it
-   stays legible on the red header. Height-driven, width follows the
-   aspect ratio (never stretched or cropped). */
-.app-header__logo {
-  display: flex;
-  align-items: center;
-  flex: 0 0 auto;
-  background: #fff;
-  border-radius: var(--radius);
-  padding: 0.2rem 0.45rem;
-}
-
-.app-header__logo img {
-  display: block;
-  height: 3rem;
-  width: auto;
-  max-width: none;
 }
 
 .app-header__station-name {
@@ -649,10 +623,20 @@ a:focus-visible,
 
 .contact-info p { margin: 0; }
 
-/* In the footer the text lines up with the page content column. */
-.app-footer .contact-info {
+/* Footer: the logo sits right beside the contact info, in the page content column. */
+.app-footer__inner {
   max-width: 1148px;
   margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.app-footer__logo {
+  display: block;
+  flex: 0 0 auto;
+  height: 4.5rem;
+  width: auto;                /* keeps the original aspect ratio */
 }
 
 .contact-info__title {
@@ -675,6 +659,6 @@ a:focus-visible,
 }
 
 @media (max-width: 600px) {
-  .app-header__logo img { height: 2.4rem; }
   .app-footer { padding: 0.9rem 1rem; }
+  .app-footer__logo { height: 3.5rem; }
 }

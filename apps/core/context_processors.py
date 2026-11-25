@@ -18,19 +18,7 @@ def global_header_context(request):
 
     lic = license_services.get_current_license()
 
-    # Station name + address for the shared header: the same Station row
-    # (and the same Persian display mapping) that the PDF headers use, so
-    # the screen and the printed reports always show the same identity.
-    from apps.printing.services import get_station_metadata
-
-    station = get_station_metadata()
-    location = "، ".join(part for part in (station["province"], station["city"]) if part)
-
     return {
-        "station_display": {
-            "name": station.get("short_name") or station["name"],
-            "location": location,
-        },
         "global_date": workday_services.get_global_date(request),
         "today": workday_services.get_today(),
         "license_valid": lic is not None and lic.is_valid(),

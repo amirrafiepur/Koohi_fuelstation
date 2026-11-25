@@ -1,6 +1,6 @@
 """
-Global UI branding: the Panah Studios logo in the shared header and on the
-login page, and the contact footer on every page (shared partials -- one
+Global UI branding: the Panah Studios logo on the login page and in the contact
+footer (next to the contact info) on every page; the header carries no logo (shared partials -- one
 logo asset, one contact text).
 """
 
@@ -64,25 +64,16 @@ class BrandingPagesTests(TestCase):
     def login(self):
         self.client.login(username="op1", password="testpass123")
 
-    # --- header ---------------------------------------------------------
+    # --- header (unchanged: no logo) -------------------------------------
 
-    def test_header_has_logo_next_to_the_dynamic_station_name_and_address(self):
+    def test_header_is_the_original_one_without_a_logo(self):
         self.login()
         html = self.client.get("/").content.decode()
         header = html.split('<header class="app-header">', 1)[1].split("</header>", 1)[0]
-        self.assertEqual(header.count(LOGO_URL), 1)
-        station = header.split('app-header__station"', 1)[1]
-        self.assertLess(station.index(LOGO_URL), station.index("کوهی ۱۱۸"))     # logo right beside the name
-        self.assertLess(station.index("کوهی ۱۱۸"), station.index("خراسان رضوی، مشهد"))
-
-    def test_header_station_identity_is_not_hardcoded(self):
-        Station.objects.filter(pk=self.station.pk).update(name="Some Other Station", province="Prov", city="Town")
-        self.login()
-        html = self.client.get("/").content.decode()
-        header = html.split('<header class="app-header">', 1)[1].split("</header>", 1)[0]
-        self.assertIn("Some Other Station", header)
-        self.assertIn("Prov، Town", header)
-        self.assertNotIn("کوهی ۱۱۸", header)
+        self.assertNotIn("<img", header)
+        self.assertNotIn("panah", header.lower())
+        self.assertIn('<span class="app-header__station-name">کوهی ۱۱۸</span>', header)
+        self.assertIn('<span class="app-header__station-location">خراسان رضوی، مشهد</span>', header)
 
     def test_logo_and_footer_on_every_section(self):
         self.login()
@@ -92,6 +83,9 @@ class BrandingPagesTests(TestCase):
             html = resp.content.decode()
             self.assertEqual(html.count(LOGO_URL), 1, url)                     # one logo, same asset everywhere
             self.assertEqual(html.count('<footer class="app-footer">'), 1, url)
+            footer = html.split("<footer", 1)[1]
+            self.assertIn(LOGO_URL, footer, url)                               # ... and it is in the footer, with the contact info
+            self.assertIn("app-footer__logo", footer, url)
             self.assertIn(CONTACT_TEXT, visible_text(html.split("<footer", 1)[1]), url)
             # The footer comes after all page content, never inside <main>.
             self.assertGreater(html.index("<footer"), html.index("</main>"), url)
@@ -112,6 +106,8 @@ class BrandingPagesTests(TestCase):
         # stay a column so .auth-shell still centres its card.
         self.assertIn("width: min(100%, calc(1100px + 3rem));", css)
         self.assertIn("body > main:not(.app-main) {", css)
+        self.assertIn(".app-footer__logo {", css)
+        self.assertNotIn(".app-header__logo", css)
         self.assertEqual(css, (Path(settings.BASE_DIR) / "staticfiles" / "css" / "base.css").read_text(encoding="utf-8"))
 
     # --- login page -----------------------------------------------------
