@@ -13,8 +13,13 @@
   {% if user.is_authenticated %}
   <header class="app-header">
     <div class="app-header__station">
-      <span class="app-header__station-name">کوهی ۱۱۸</span>
-      <span class="app-header__station-location">خراسان رضوی، مشهد</span>
+      <span class="app-header__logo">
+        <img src="{% static 'img/panah-studios-logo.png' %}" alt="Panah Studios" width="592" height="583">
+      </span>
+      <div class="app-header__station-text">
+        <span class="app-header__station-name">{{ station_display.name }}</span>
+        <span class="app-header__station-location">{{ station_display.location }}</span>
+      </div>
     </div>
     <div class="app-header__right">
       <div class="today-date">
@@ -174,5 +179,6 @@
     {% endif %}
     {% block content %}{% endblock %}
   </main>
+  {% block footer %}{% include "partials/_footer.html" %}{% endblock %}
 </body>
 </html>

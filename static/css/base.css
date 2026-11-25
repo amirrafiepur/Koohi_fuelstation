@@ -79,6 +79,20 @@ body {
   font-family: var(--font-body);
   font-size: 15px;
   line-height: 1.6;
+  /* Sticky-footer layout: on short pages the footer sits at the bottom of
+     the window, on long pages it simply follows the content. */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body > main { flex: 1 0 auto; }
+
+/* The sign-in pages' <main> carries no class: it becomes a column so the
+   .auth-shell inside it still fills the window and centres its card. */
+body > main:not(.app-main) {
+  display: flex;
+  flex-direction: column;
 }
 
 h1, h2, h3 {
@@ -113,8 +127,34 @@ a { color: inherit; }
 
 .app-header__station {
   display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.app-header__station-text {
+  display: flex;
   flex-direction: column;
   gap: 0.1rem;
+  white-space: nowrap;
+}
+
+/* The logo is dark on transparent: it sits on a white rounded tile so it
+   stays legible on the red header. Height-driven, width follows the
+   aspect ratio (never stretched or cropped). */
+.app-header__logo {
+  display: flex;
+  align-items: center;
+  flex: 0 0 auto;
+  background: #fff;
+  border-radius: var(--radius);
+  padding: 0.2rem 0.45rem;
+}
+
+.app-header__logo img {
+  display: block;
+  height: 3rem;
+  width: auto;
+  max-width: none;
 }
 
 .app-header__station-name {
@@ -343,6 +383,11 @@ a { color: inherit; }
   padding: 1.5rem;
   max-width: 1100px;
   margin: 0 auto;
+  /* Inside the column-flex <body> a centred item would shrink to its
+     content; this keeps the exact previous width (1100px of content plus
+     the padding, never wider than the window). */
+  box-sizing: border-box;
+  width: min(100%, calc(1100px + 3rem));
 }
 
 .alert {
@@ -476,7 +521,8 @@ a { color: inherit; }
    --------------------------------------------------------------------- */
 
 .auth-shell {
-  min-height: 100vh;
+  flex: 1 0 auto;            /* fills the window above the footer (body is a column flex) */
+  min-height: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -497,6 +543,18 @@ a { color: inherit; }
 .auth-card__header {
   text-align: center;
   margin-bottom: 1.5rem;
+}
+
+.auth-card__logo {
+  text-align: center;
+  margin-bottom: 0.75rem;
+}
+
+.auth-card__logo img {
+  display: inline-block;
+  width: 8.5rem;
+  max-width: 60%;
+  height: auto;              /* keeps the original aspect ratio */
 }
 
 .form-group {
@@ -576,4 +634,47 @@ a:focus-visible,
   * {
     transition: none !important;
   }
+}
+
+/* ---------------------------------------------------------------------
+   Contact info (global footer + login page) and footer
+   --------------------------------------------------------------------- */
+
+.contact-info {
+  font-size: 0.85rem;
+  line-height: 1.9;
+  color: var(--color-ink-muted);
+  text-align: right;
+}
+
+.contact-info p { margin: 0; }
+
+/* In the footer the text lines up with the page content column. */
+.app-footer .contact-info {
+  max-width: 1148px;
+  margin: 0 auto;
+}
+
+.contact-info__title {
+  font-weight: 700;
+  color: var(--color-ink);
+}
+
+.app-footer {
+  flex: 0 0 auto;
+  margin-top: 2rem;
+  padding: 1rem 1.5rem;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+}
+
+.auth-card .contact-info {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--color-border);
+}
+
+@media (max-width: 600px) {
+  .app-header__logo img { height: 2.4rem; }
+  .app-footer { padding: 0.9rem 1rem; }
 }

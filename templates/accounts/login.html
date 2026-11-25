@@ -1,8 +1,12 @@
 {% extends "base.html" %}
+{% load static %}
 {% block title %}ورود — کوهی ۱۱۸{% endblock %}
 {% block content %}
 <div class="auth-shell">
   <div class="auth-card">
+    <div class="auth-card__logo">
+      <img src="{% static 'img/panah-studios-logo.png' %}" alt="Panah Studios" width="592" height="583">
+    </div>
     <div class="auth-card__header">
       <h1>کوهی ۱۱۸</h1>
       <p style="color: var(--color-ink-muted); font-size: 0.85rem;">ورود به سامانه حسابداری جایگاه</p>
@@ -38,6 +42,10 @@
         <a href="{% url 'accounts:first_setup' %}" class="app-nav__link">راه‌اندازی اولیه سامانه</a>
       </div>
     {% endif %}
+
+    {% include "partials/_contact_info.html" %}
   </div>
 </div>
 {% endblock %}
+{# The login card already carries the contact text; no second copy in a page footer. #}
+{% block footer %}{% endblock %}

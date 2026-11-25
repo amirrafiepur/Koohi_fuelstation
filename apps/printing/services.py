@@ -26,6 +26,8 @@ from apps.stations.ordering import nozzle_order
 #: station row is ever renamed to something else.
 _KOOHI_118_DISPLAY = {
     "name": "جایگاه کوهی ۱۱۸",
+    # The station's own name without the «جایگاه» prefix -- the app header.
+    "short_name": "کوهی ۱۱۸",
     "province": "خراسان رضوی",
     "city": "مشهد",
 }
