@@ -10,8 +10,9 @@ apps/comparison/services.py).
 DigitalEntry is deliberately a separate model/table from
 apps.statement.models.StatementEntry and from every mechanical/system
 source (NozzleSale, PurchaseInvoice, TankInventory, ...): the values
-here are whatever the operator types in, not derived from those models
-and not fed back into them.
+here are whatever the operator types in -- every column, including both
+totals -- not derived from those models, not calculated, and not fed back
+into them.
 """
 
 from decimal import Decimal
@@ -55,6 +56,19 @@ class DigitalEntry(models.Model):
         "موجودی آخر ماه", max_digits=14, decimal_places=2, default=Decimal("0"),
     )
 
+    # The two totals and the second آزمایش column are typed in by the user like
+    # every other column of this table -- nothing in فروش دیجیتال is calculated.
+    received_total = models.DecimalField(
+        "جمع کل", max_digits=14, decimal_places=2, default=Decimal("0"),
+    )
+    dispatched_test_return = models.DecimalField(
+        "آزمایش", max_digits=14, decimal_places=2, default=Decimal("0"),
+        help_text="The آزمایش column of the خارج شده side.",
+    )
+    dispatched_total = models.DecimalField(
+        "جمع کل خارج شده", max_digits=14, decimal_places=2, default=Decimal("0"),
+    )
+
     class Meta:
         verbose_name = "Digital Sales Entry"
         verbose_name_plural = "Digital Sales Entries"
@@ -63,12 +77,3 @@ class DigitalEntry(models.Model):
     def __str__(self):
         return f"{self.tank} — {self.year}/{self.month} (digital)"
 
-    @property
-    def received_total(self):
-        """جمع کل (رسیده side) -- sum of this row's own entered values."""
-        return self.beginning_inventory + self.received_quantity + self.test_return + self.overage
-
-    @property
-    def dispatched_total(self):
-        """جمع کل خارج شده -- sum of this row's own entered values."""
-        return self.sales_quantity + self.test_return + self.shortage + self.ending_inventory

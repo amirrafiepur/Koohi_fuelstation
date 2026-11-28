@@ -6,10 +6,9 @@
   upper table of the final صورت وضعیت ماهانه section," per the task.
   No calculation is duplicated here.
 - فروش دیجیتال: comes only from apps.comparison.models.DigitalEntry.
-  Nothing here is derived from mechanical/system data; رسیده_total and
-  dispatched_total are plain sums of that row's own entered fields
-  (DigitalEntry.received_total / .dispatched_total), not a reuse of any
-  mechanical calculation.
+  Nothing here is derived from mechanical/system data and nothing is
+  calculated: every column, including both totals, is exactly what the
+  user entered.
 """
 
 from apps.stations.models import Tank
@@ -38,6 +37,7 @@ def build_digital_rows(year: int, month: int):
             "overage": entry.overage,
             "received_total": entry.received_total,
             "sales_quantity": entry.sales_quantity,
+            "dispatched_test_return": entry.dispatched_test_return,
             "shortage": entry.shortage,
             "ending_inventory": entry.ending_inventory,
             "dispatched_total": entry.dispatched_total,

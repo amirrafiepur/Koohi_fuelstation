@@ -12,6 +12,8 @@
   <form method="post" data-enter-next>
     {% csrf_token %}
     {% for field in form %}
+    {% if field.name == "beginning_inventory" %}<h3 style="font-size:0.95rem; margin: 0 0 0.75rem;">رسیده</h3>{% endif %}
+    {% if field.name == "sales_quantity" %}<h3 style="font-size:0.95rem; margin: 1.5rem 0 0.75rem;">خارج شده</h3>{% endif %}
     <div style="margin-bottom: 1rem;">
       <label class="form-label">{{ field.label }}</label>
       {{ field }}
